@@ -1,0 +1,473 @@
+\documentclass[a4paper,11pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fontawesome5}
+
+% ============================================================
+% Couleurs violet/lavande
+% ============================================================
+\definecolor{mainpurple}{RGB}{106, 90, 205}
+\definecolor{lightlavender}{RGB}{230, 230, 250}
+\definecolor{deeppurple}{RGB}{75, 0, 130}
+\definecolor{softpurple}{RGB}{147, 112, 219}
+\definecolor{palelavender}{RGB}{245, 240, 255}
+
+% Couleurs code (thème sombre)
+\definecolor{codebg}{RGB}{30, 30, 30}
+\definecolor{codegreen}{RGB}{0, 200, 100}
+\definecolor{codegray}{RGB}{160, 160, 160}
+\definecolor{codestring}{RGB}{206, 145, 120}
+\definecolor{codekeyword}{RGB}{86, 156, 214}
+\definecolor{codecomment}{RGB}{106, 153, 85}
+
+% ============================================================
+% Géométrie
+% ============================================================
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm,
+    headheight=22pt
+}
+
+% ============================================================
+% En-têtes / pieds de page
+% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{mainpurple}\small\leftmark}
+\fancyhead[R]{\color{softpurple}\small PROJET FTP - SR}
+\fancyfoot[C]{\color{mainpurple}\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{mainpurple}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{mainpurple}\leaders\hrule height \footrulewidth\hfill}}
+
+% ============================================================
+% Titres
+% ============================================================
+\titleformat{\section}
+  {\LARGE\bfseries\color{deeppurple}}
+  {\thesection}{1em}{}
+  [\titlerule]
+
+\titleformat{\subsection}
+  {\Large\bfseries\color{mainpurple}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\large\bfseries\color{softpurple}}
+  {\thesubsubsection}{1em}{}
+
+% ============================================================
+% Boîtes tcolorbox (uniquement celles du document)
+% ============================================================
+\newtcolorbox{infobox}{
+    colback=lightlavender,
+    colframe=mainpurple,
+    boxrule=1pt,
+    arc=3mm,
+    left=10pt, right=10pt, top=10pt, bottom=10pt
+}
+
+\newtcolorbox{tipbox}{
+    colback=palelavender,
+    colframe=softpurple,
+    boxrule=1pt,
+    arc=3mm,
+    left=10pt, right=10pt, top=10pt, bottom=10pt,
+    title={\textbf{$\triangleright$ Idée}}
+}
+
+\newtcolorbox{warningbox}{
+    colback=lightlavender!50,
+    colframe=deeppurple,
+    boxrule=1.5pt,
+    arc=3mm,
+    left=10pt, right=10pt, top=10pt, bottom=10pt,
+    title={\textbf{$\blacktriangledown$ Attention}}
+}
+
+\newtcolorbox{examplebox}{
+    colback=palelavender,
+    colframe=mainpurple,
+    boxrule=1pt,
+    arc=2mm,
+    left=8pt, right=8pt, top=8pt, bottom=8pt,
+    title={\textbf{$\star$ Exemple concret}}
+}
+
+\newtcolorbox{sciencebox}{
+    colback=lightlavender!70,
+    colframe=deeppurple,
+    boxrule=1pt,
+    arc=3mm,
+    left=10pt, right=10pt, top=10pt, bottom=10pt,
+    title={\textbf{$\boldsymbol{\Sigma}$ Éclairage technique}}
+}
+
+% ============================================================
+% Listings (blocs de code)
+% ============================================================
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{white},
+    basicstyle=\ttfamily\small\color{black},
+    keywordstyle=\color{mainpurple}\bfseries,
+    stringstyle=\color{red!85!orange},
+    commentstyle=\color{deeppurple}\itshape,
+    numberstyle=\tiny\color{red!85!orange},
+    breaklines=true,
+    breakatwhitespace=false,
+    keepspaces=true,
+    showspaces=false,
+    showstringspaces=false,
+    frame=single,
+    framesep=4pt,
+    rulecolor=\color{mainpurple},
+    xleftmargin=8pt,
+    xrightmargin=4pt,
+    tabsize=4,
+    literate=
+        {←}{{\textcolor{codegreen}{<-}}}2
+        {→}{{\textcolor{codegreen}{->}}}2
+        {✅}{{\textcolor{codegreen}{[OK]}}}3
+        {❌}{{\textcolor{red}{[NON]}}}4
+}
+
+\lstdefinestyle{bash}{
+    style=codestyle,
+    language=bash,
+    morekeywords={adb,nmap,grep,sed,zip,sudo,apt}
+}
+
+\lstdefinestyle{cstyle}{
+    style=codestyle,
+    language=C
+}
+
+\lstset{style=codestyle}
+
+% ============================================================
+% Liens
+% ============================================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=deeppurple,
+    citecolor=mainpurple,
+    urlcolor=softpurple,
+    pdfborder={0 0 0},
+    pdftitle={TP FTP -- Documentation},
+    pdfauthor={ANGERETTI Quentin et CASSOU Baptiste}
+}
+
+% ============================================================
+% Informations de garde
+% ============================================================
+\newcommand{\titreprojet}{TP FTP}
+\newcommand{\soustitreprojet}{Systèmes et Réseaux}
+\newcommand{\nometudiantA}{ANGERETTI Quentin}
+\newcommand{\nometudiantB}{CASSOU Baptiste}
+\newcommand{\anneeuniversitaire}{2025--2026}
+
+\begin{document}
+
+% ============================================================
+% PAGE DE TITRE
+% ============================================================
+\begin{titlepage}
+    \centering
+    \vspace*{1.2cm}
+
+    {\Huge\bfseries\color{deeppurple} \titreprojet\par}
+    \vspace{0.3cm}
+    {\LARGE\bfseries\color{mainpurple} \soustitreprojet\par}
+
+    \vspace{1.2cm}
+
+    \begin{tcolorbox}[
+        colback=lightlavender,
+        colframe=mainpurple,
+        width=0.9\textwidth,
+        arc=5mm,
+        boxrule=2pt
+    ]
+    \centering
+    {\Large\color{deeppurple} TP : Transfert de fichiers (FTP)\par}
+    \vspace{0.35cm}
+    {\large Service de transfert de fichiers inspiré du protocole FTP\par}
+    \vspace{0.2cm}
+    {\normalsize Client, serveur concurrent, reprise de transfert, architecture maître/esclaves\par}
+    \end{tcolorbox}
+
+    \vspace{1.1cm}
+
+    \begin{tikzpicture}
+        \fill[mainpurple!30] (0,0) circle (2.8cm);
+        \fill[softpurple!40] (0,0) circle (1.9cm);
+        \fill[deeppurple!20] (0,0) circle (1.05cm);
+        \node[align=center] at (0,0) {\color{deeppurple}\bfseries FTP};
+    \end{tikzpicture}
+
+    \vfill
+
+    \begin{tcolorbox}[
+        colback=palelavender,
+        colframe=softpurple,
+        width=0.75\textwidth,
+        arc=4mm,
+        boxrule=1.2pt
+    ]
+    \centering
+    {\large\textbf{Réalisé par}\par}
+    \vspace{0.25cm}
+    {\large \nometudiantA\par}
+    {\large \nometudiantB\par}
+    \vspace{0.35cm}
+    {\normalsize Année universitaire : \anneeuniversitaire\par}
+    {\normalsize \today\par}
+    \end{tcolorbox}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Analyse du sujet}
+
+La vraie difficulté est la \textbf{conception du protocole} :
+quoi envoyer, dans quel ordre, et comment gérer les erreurs.
+\begin{infobox}
+Le sujet demande de construire un service de transfert de fichiers inspiré de FTP, en plusieurs étapes, du cas simple au cas distribué.
+Ce TP mélange :
+\begin{itemize}[leftmargin=1.2cm]
+    \item communication réseau (sockets TCP),
+    \item protocole applicatif (messages client/serveur),
+    \item gestion de fichiers (texte et binaire),
+    \item concurrence et robustesse.
+\end{itemize}
+\end{infobox}
+
+
+\subsection{FTP : rappel simple}
+Le FTP est un protocol de transfert de fichiers :
+\begin{sciencebox}
+\textbf{FTP (File Transfer Protocol)} : un client envoie une commande (\texttt{get}, \texttt{put}, \texttt{ls}...), le serveur répond avec un code de statut et éventuellement des données.
+TCP transporte des octets de façon fiable, mais ne donne pas le sens des messages : ce sens est défini par \textbf{votre protocole applicatif}.
+\end{sciencebox}
+
+
+\subsection{But global du projet}
+Dans la version minimale, le système comporte :
+\begin{itemize}[leftmargin=1.2cm]
+    \item un client qui envoie une requête ;
+    \item un serveur qui traite la requête et répond.
+\end{itemize}
+
+\begin{examplebox}
+\textbf{Exemple.} Le client demande \texttt{\textcolor{softpurple}{get} rapport.pdf}. Le serveur renvoie le fichier s'il existe, sinon un code d'erreur.
+\end{examplebox}
+
+Le scénario de base :
+\begin{enumerate}[leftmargin=1.2cm]
+    \item connexion TCP client \textrightarrow{} serveur ;
+    \item envoi d'une requête structurée ;
+    \item traitement serveur ;
+    \item réponse (succès/erreur + données).
+\end{enumerate}
+
+\subsection{Notion centrale : protocole applicatif}
+\begin{tipbox}
+Définir dès le début \texttt{typereq\_t}, \texttt{request\_t} et \texttt{response\_t}. Le protocole doit rester extensible (\texttt{bye}, \texttt{ls}, \texttt{put}, \texttt{rm}).
+\end{tipbox}
+
+\section{Plan d'action}
+\subsection{Serveur FTP de base}
+\begin{infobox}
+Objectif : un serveur concurrent (pool de processus), port 2121, qui traite \texttt{GET} et ferme proprement sur \texttt{SIGINT}.
+\end{infobox}
+
+\textbf{Points clés :}
+\begin{itemize}[leftmargin=1.2cm]
+    \item un fichier par connexion (dans cette étape),
+    \item codes de retour explicites côté client/serveur,
+    \item support des fichiers binaires (raisonner en octets et tailles, pas en chaînes C),
+    \item arrêt propre du serveur et nettoyage des processus fils.
+\end{itemize}
+
+\subsection{Amélioration et robustesse}
+\begin{infobox}
+Objectif : ne plus charger un gros fichier d'un coup, mais l'envoyer \textbf{par blocs}, puis permettre plusieurs commandes sur une même connexion.
+\end{infobox}
+
+\begin{itemize}[leftmargin=1.2cm]
+    \item définir la taille de bloc et le mécanisme de fin de transfert ;
+    \item conserver la connexion ouverte jusqu'à \texttt{bye} ;
+    \item ajouter la reprise de transfert après interruption (offset).
+\end{itemize}
+
+\begin{warningbox}
+Sans protocole clair sur les tailles et les offsets, la reprise peut corrompre le fichier (doublons, trous, troncature).
+\end{warningbox}
+
+\subsection{Idée-clé de maître / esclaves}
+
+\textbf{Objectif} : répartir la charge. 
+
+Un serveur maître reçoit le client, choisit un esclave (Round-Robin), puis le client parle directement à cet esclave.
+
+
+\begin{tipbox}
+Le sujet suppose des collections de fichiers identiques sur les esclaves, ce qui simplifie la répartition.
+\end{tipbox}
+
+
+\begin{examplebox}
+Séquence type : 
+\begin{center}
+    
+Client \textrightarrow{} Maître (demande) \textrightarrow{} Client (IP/port esclave) \textrightarrow{} Esclave (session FTP).
+
+\end{center}
+\end{examplebox}
+
+
+\subsection{Commandes avancées et sécurité}
+\begin{infobox}
+Ajouter \texttt{ls}, \texttt{put} et \texttt{rm}, puis protéger les commandes sensibles avec authentification.
+\end{infobox}
+
+\begin{sciencebox}
+La commande \texttt{ls} illustre l'interface système (\texttt{fork}/\texttt{exec}/\texttt{dup2} ou \texttt{popen}).
+
+\texttt{put}/\texttt{rm} introduisent la mise à jour des fichiers et la question de cohérence entre esclaves.
+\end{sciencebox}
+
+
+
+\newpage
+\section{Étape I : serveur FTP de base}
+
+\subsection{Réponses directes aux questions Q1 à Q4}
+\subsubsection*{Q2 -- Structure \texttt{request\_t}}
+\begin{infobox}
+La structure \texttt{request\_t} est définie dans \texttt{include/ftp\_shared.h}.  
+Elle contient le type de requête (\texttt{type}) et le nom de fichier (\texttt{filename}), ainsi que des champs prévus pour les étapes suivantes (\texttt{version}, \texttt{offset}, \texttt{block\_size}, \texttt{login}, \texttt{password}).
+\end{infobox}
+
+\subsubsection*{Q3 -- Squelette client/serveur FTP}
+\begin{infobox}
+Le squelette 'echo' a été adapté et renommé en \texttt{clientFTP} / \texttt{serverFTP}.  
+Le port est fixé à \texttt{2121} via \texttt{FTP\_PORT} (pas d'argument de port).  
+
+La concurrence est assurée par un pool de processus de taille \texttt{NB\_PROC}.
+\end{infobox}
+
+\begin{examplebox}
+\textbf{Validation de lancement :}
+\begin{lstlisting}[style=bash]
+make all
+make run-server
+make run-client HOST=127.0.0.1
+\end{lstlisting}
+\end{examplebox}
+
+\subsubsection*{Q4 -- Terminaison propre avec \texttt{SIGINT}}
+\begin{infobox}
+Le parent installe un handler \texttt{SIGINT} qui :
+\begin{itemize}[leftmargin=1.2cm]
+    \item ferme la socket d'écoute,
+    \item retransmet \texttt{SIGINT} à tous les fils du pool,
+    \item attend la fin des fils avec \texttt{waitpid}.
+\end{itemize}
+Chaque fils installe aussi un handler \texttt{SIGINT} pour quitter proprement sa boucle d'acceptation.
+\end{infobox}
+
+\subsection{Implémentation des types partagés}
+\begin{infobox}
+Les types partagés sont centralisés dans \texttt{include/ftp\_shared.h}. Ils servent de contrat unique entre client, serveur, maître et esclaves.
+\end{infobox}
+
+\textbf{Extrait de la structure de requête :}
+\begin{lstlisting}[style=cstyle]
+typedef struct {
+    uint32_t version;
+    uint32_t type;      /* typereq_t */
+    uint64_t offset;    /* reprise de transfert */
+    uint32_t block_size;
+    char filename[FTP_MAX_FILENAME];
+    char login[FTP_MAX_LOGIN];
+    char password[FTP_MAX_PASSWORD];
+} request_t;
+\end{lstlisting}
+
+\begin{tipbox}
+Cette base couvre déjà les étapes suivantes :
+\texttt{GET} (étape I), transfert par blocs et reprise (\texttt{offset}, étape II), puis \texttt{ls}/\texttt{put}/\texttt{rm}/\texttt{auth} (étape IV), sans casser le format des messages.
+\end{tipbox}
+
+\subsection{Décisions de conception}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Versionnage} : le champ \texttt{version} permet de faire évoluer le protocole.
+    \item \textbf{Réponse unifiée} : \texttt{response\_t} expose un \texttt{status} explicite pour la gestion d'erreurs.
+    \item \textbf{Reprise native} : le champ \texttt{offset} est prévu dès la base.
+    \item \textbf{Extensibilité} : les commandes futures sont déjà codées dans \texttt{typereq\_t}.
+\end{itemize}
+
+\subsection{Fonctionnement actuel de \texttt{serverFTP}}
+\begin{infobox}
+Le programme \texttt{serverFTP} ouvre une socket d'écoute sur \texttt{2121}, puis crée au démarrage un pool de \texttt{NB\_PROC} fils.
+Chaque fils accepte des connexions et traite les clients ; le parent supervise le pool.
+\end{infobox}
+
+\begin{sciencebox}
+Chaîne d'exécution côté serveur :
+\begin{center}
+\texttt{Open\_listenfd(2121) \textrightarrow{} Fork x NB\_PROC \textrightarrow{} Accept (dans les fils) \textrightarrow{} R/W socket}
+\end{center}
+\end{sciencebox}
+
+\subsection{Fonctionnement actuel de \texttt{clientFTP}}
+\begin{infobox}
+Le programme \texttt{clientFTP} prend l'hôte en argument, se connecte au serveur sur le port \texttt{2121}, lit l'entrée standard et envoie les lignes au serveur.
+Chaque ligne reçue en retour est affichée sur la sortie standard.
+\end{infobox}
+
+\textbf{Lancement local :}
+\begin{lstlisting}[style=bash]
+make all
+make run-server
+make run-client HOST=127.0.0.1
+\end{lstlisting}
+
+\subsection{Déroulé d'une session (version courante)}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item le serveur démarre et écoute sur \texttt{2121},
+    \item le client se connecte à \texttt{<host>:2121},
+    \item l'utilisateur saisit une ligne dans le client,
+    \item le serveur renvoie actuellement la même ligne (comportement de base de validation réseau),
+    \item la session se termine à la fermeture du client.
+\end{enumerate}
+
+
+\end{document}

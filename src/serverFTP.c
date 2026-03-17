@@ -1,5 +1,8 @@
 #include "csapp.h"
+#include "ftp_runtime.h"
 #include "ftp_shared.h"
+#include "serverFTP.h"
+#include "server_requests.h"
 
 #include <errno.h>
 
@@ -15,21 +18,6 @@ static void safe_close_listenfd(void)
     if (fd >= 0) {
         g_listenfd = -1;
         close(fd);
-    }
-}
-
-static void handle_client(int connfd)
-{
-    ssize_t n;
-    char buf[MAXLINE];
-    rio_t rio;
-
-    Rio_readinitb(&rio, connfd);
-    while ((n = Rio_readlineb(&rio, buf, MAXLINE)) > 0) {
-        Rio_writen(connfd, buf, (size_t)n);
-        if (child_stop) {
-            break;
-        }
     }
 }
 
@@ -96,7 +84,7 @@ static void worker_loop(int listenfd)
         printf("serverFTP worker %d connected to %s (%s)\n", getpid(), client_hostname, client_ip_string);
 
         g_connfd = connfd;
-        handle_client(connfd);
+        ftp_handle_client(connfd);
         if (g_connfd >= 0) {
             Close(g_connfd);
             g_connfd = -1;
@@ -104,10 +92,11 @@ static void worker_loop(int listenfd)
     }
 }
 
-int main(void)
+int ftp_server_run(void)
 {
     int i;
 
+    ftp_enter_working_directory("serverFTP", FTP_SERVER_DATA_DIR);
     g_listenfd = Open_listenfd(FTP_PORT);
     printf("serverFTP listening on port %d with %d workers\n", FTP_PORT, NB_PROC);
 
@@ -133,4 +122,9 @@ int main(void)
     }
 
     return 0;
+}
+
+int main(void)
+{
+    return ftp_server_run();
 }

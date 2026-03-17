@@ -12,12 +12,12 @@
   Partir de l'exemple echo, renommer en `clientFTP`/`serverFTP`, utiliser le port `2121`, et mettre en place un pool de processus configuré avec `NB_PROC`.
 
 - [x] **Q4 - Terminaison propre du serveur (`SIGINT`)**  
-  Installer un handler de signal, transmettre `SIGINT` aux fils, fermer les sockets, et éviter les processus zombies.
+  Installer un handler de signal, transmettre `SIGINT` aux fils, fermer les sockets, et éviter les processus zombies. 
 
-- [ ] **Q5 - Dossiers de travail client/serveur**  
+- [x] **Q5 - Dossiers de travail client/serveur**  
   Utiliser explicitement `data_server/` pour les fichiers servis et `data_client/` pour les fichiers reçus.
 
-- [ ] **Q6 - Traitement côté serveur**  
+- [x] **Q6 - Traitement côté serveur**  
   Implémenter :
   - une requête par connexion (étape I),
   - réception et décodage de `request_t`,
@@ -25,7 +25,7 @@
   - traitement de `GET`,
   - transfert de fichiers texte et binaires.
 
-- [ ] **Q7 - Traitement côté client**  
+- [x] **Q7 - Traitement côté client**  
   Encoder la saisie en `request_t`, envoyer la requête, recevoir `response_t`, sauvegarder le fichier, afficher erreurs ou succès avec statistiques de transfert.
 
 ## Étape II : Amélioration du serveur FTP

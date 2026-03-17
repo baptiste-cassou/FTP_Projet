@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1080" viewBox="0 0 1500 1080">
+<rect width="100%" height="100%" fill="#f9f6ff" />
+<text x="50" y="56" font-size="32" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#4b0082">Cycle de vie du serveur</text>
+<text x="50" y="92" font-size="18" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#6a5acd">Version simple : lancement, service des connexions, puis arret propre</text>
+<rect x="110" y="170" width="300" height="150" rx="20" fill="#ede7ff" stroke="#4b0082" stroke-width="2" />
+<text x="260.0" y="204" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">1. Demarrage</text>
+<text x="128" y="230" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>main</tspan><tspan x="128" dy="17.5">ftp_server_run</tspan><tspan x="128" dy="17.5">chdir(data_server)</tspan><tspan x="128" dy="17.5">Open_listenfd(2121)</tspan></text>
+<rect x="520" y="170" width="300" height="150" rx="20" fill="#ede7ff" stroke="#4b0082" stroke-width="2" />
+<text x="670.0" y="204" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">2. Pool de processus</text>
+<text x="538" y="230" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Boucle sur NB_PROC</tspan><tspan x="538" dy="17.5">Fork()</tspan><tspan x="538" dy="17.5">Chaque fils herite</tspan><tspan x="538" dy="17.5">listenfd</tspan></text>
+<rect x="930" y="170" width="360" height="150" rx="20" fill="#ede7ff" stroke="#4b0082" stroke-width="2" />
+<text x="1110.0" y="204" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">3. Worker loop</text>
+<text x="948" y="230" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>accept()</tspan><tspan x="948" dy="17.5">Getnameinfo / Inet_ntop</tspan><tspan x="948" dy="17.5">ftp_handle_client(connfd)</tspan><tspan x="948" dy="17.5">Close(connfd)</tspan></text>
+<rect x="930" y="440" width="360" height="180" rx="20" fill="#e6e6fa" stroke="#6a5acd" stroke-width="2" />
+<text x="1110.0" y="474" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">4. Une connexion</text>
+<text x="948" y="500" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>ftp_receive_request</tspan><tspan x="948" dy="17.5">validate_request</tspan><tspan x="948" dy="17.5">handle_get_request</tspan><tspan x="948" dy="17.5">ftp_send_response</tspan><tspan x="948" dy="17.5">Rio_writen(payload)</tspan></text>
+<rect x="540" y="740" width="320" height="160" rx="20" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" />
+<text x="700.0" y="774" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#7b3fc5">5. SIGINT cote pere</text>
+<text x="558" y="800" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>parent_sigint_handler</tspan><tspan x="558" dy="17.5">safe_close_listenfd</tspan><tspan x="558" dy="17.5">kill(child, SIGINT)</tspan></text>
+<rect x="970" y="740" width="330" height="160" rx="20" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" />
+<text x="1135.0" y="774" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#7b3fc5">6. SIGINT cote worker</text>
+<text x="988" y="800" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>child_sigint_handler</tspan><tspan x="988" dy="17.5">close(listenfd)</tspan><tspan x="988" dy="17.5">close(connfd)</tspan><tspan x="988" dy="17.5">_exit(0)</tspan></text>
+<rect x="130" y="740" width="280" height="160" rx="20" fill="#efeafe" stroke="#6a5acd" stroke-width="2" />
+<text x="270.0" y="774" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">7. Fin propre</text>
+<text x="148" y="800" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>waitpid sur les fils</tspan><tspan x="148" dy="17.5">pas de zombies</tspan><tspan x="148" dy="17.5">serveur proprement</tspan><tspan x="148" dy="17.5">arrete</tspan></text>
+<line x1="410" y1="245" x2="520" y2="245" stroke="#4b0082" stroke-width="2" />
+<polygon points="520,245 510.0,251.0 510.0,239.0" fill="#4b0082" />
+<text x="465.0" y="226.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>cree les</tspan><tspan x="465.0" dy="17.5">workers</tspan></text>
+<line x1="820" y1="245" x2="930" y2="245" stroke="#4b0082" stroke-width="2" />
+<polygon points="930,245 920.0,251.0 920.0,239.0" fill="#4b0082" />
+<text x="875.0" y="235.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">worker_loop</text>
+<line x1="1110" y1="320" x2="1110" y2="440" stroke="#4b0082" stroke-width="2" />
+<polygon points="1110,440 1104.0,430.0 1116.0,430.0" fill="#4b0082" />
+<text x="1110.0" y="355.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>une connexion</tspan><tspan x="1110.0" dy="17.5">arrive</tspan></text>
+<line x1="930" y1="820" x2="860" y2="820" stroke="#4b0082" stroke-width="2" />
+<polygon points="860,820 870.0,814.0 870.0,826.0" fill="#4b0082" />
+<text x="895.0" y="810.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">signal</text>
+<line x1="540" y1="820" x2="410" y2="820" stroke="#4b0082" stroke-width="2" />
+<polygon points="410,820 420.0,814.0 420.0,826.0" fill="#4b0082" />
+<text x="475.0" y="810.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">waitpid</text>
+<line x1="860" y1="820" x2="970" y2="820" stroke="#4b0082" stroke-width="2" />
+<polygon points="970,820 960.0,826.0 960.0,814.0" fill="#4b0082" />
+<text x="915.0" y="801.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>sortie</tspan><tspan x="915.0" dy="17.5">worker</tspan></text>
+<text x="750" y="980" font-size="22" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">Pourquoi ca marche:</text>
+<text x="750" y="1010.0" font-size="16" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd"><tspan>Le pere garde la vue globale, les fils servent les connexions, et SIGINT ferme</tspan><tspan x="750" dy="20.0">les sockets avant waitpid.</tspan></text>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1040" viewBox="0 0 1680 1040">
+<rect width="100%" height="100%" fill="#fbf9ff" />
+<text x="50" y="56" font-size="32" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#4b0082">Sequence d&#x27;un GET reussi</text>
+<text x="50" y="92" font-size="18" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#6a5acd">Version simplifiee : qui parle a qui, et dans quel ordre</text>
+<rect x="85" y="150" width="190" height="58" rx="18" fill="#efeafe" stroke="#6a5acd" stroke-width="2" />
+<text x="180" y="186" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">Utilisateur</text>
+<line x1="180" y1="210" x2="180" y2="820" stroke="#6a5acd" stroke-width="2" stroke-dasharray="8 8" />
+<rect x="425" y="150" width="190" height="58" rx="18" fill="#efeafe" stroke="#4b0082" stroke-width="2" />
+<text x="520" y="186" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">clientFTP</text>
+<line x1="520" y1="210" x2="520" y2="820" stroke="#4b0082" stroke-width="2" stroke-dasharray="8 8" />
+<rect x="805" y="150" width="190" height="58" rx="18" fill="#efeafe" stroke="#4b0082" stroke-width="2" />
+<text x="900" y="186" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">serverFTP</text>
+<line x1="900" y1="210" x2="900" y2="820" stroke="#4b0082" stroke-width="2" stroke-dasharray="8 8" />
+<rect x="1145" y="150" width="190" height="58" rx="18" fill="#efeafe" stroke="#6a5acd" stroke-width="2" />
+<text x="1240" y="186" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">data_server/</text>
+<line x1="1240" y1="210" x2="1240" y2="820" stroke="#6a5acd" stroke-width="2" stroke-dasharray="8 8" />
+<rect x="1415" y="150" width="190" height="58" rx="18" fill="#efeafe" stroke="#6a5acd" stroke-width="2" />
+<text x="1510" y="186" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">data_client/</text>
+<line x1="1510" y1="210" x2="1510" y2="820" stroke="#6a5acd" stroke-width="2" stroke-dasharray="8 8" />
+<line x1="180" y1="260" x2="520" y2="260" stroke="#4b0082" stroke-width="2" />
+<polygon points="520,260 510.0,266.0 510.0,254.0" fill="#4b0082" />
+<text x="350.0" y="248.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">1. commande get</text>
+<rect x="360" y="278" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="376" y="300" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68"><tspan>parse_get_command</tspan><tspan x="376" dy="17.5">verifie la syntaxe</tspan></text>
+<line x1="520" y1="350" x2="900" y2="350" stroke="#4b0082" stroke-width="2" />
+<polygon points="900,350 890.0,356.0 890.0,344.0" fill="#4b0082" />
+<text x="710.0" y="338.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">2. request_t</text>
+<rect x="610" y="368" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="626" y="390" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68"><tspan>Open_clientfd</tspan><tspan x="626" dy="17.5">ftp_build_get_request</tspan><tspan x="626" dy="17.5">Rio_writen</tspan></text>
+<line x1="900" y1="440" x2="1240" y2="440" stroke="#6a5acd" stroke-width="2" />
+<polygon points="1240,440 1230.0,446.0 1230.0,434.0" fill="#6a5acd" />
+<text x="1070.0" y="428.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">3. stat + read</text>
+<rect x="1010" y="458" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="1026" y="480" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68"><tspan>ftp_load_file</tspan><tspan x="1026" dy="17.5">trouve st.st_size</tspan></text>
+<line x1="900" y1="530" x2="520" y2="530" stroke="#4b0082" stroke-width="2" />
+<polygon points="520,530 530.0,524.0 530.0,536.0" fill="#4b0082" />
+<text x="710.0" y="518.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">4. response_t</text>
+<rect x="605" y="548" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="621" y="570" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68">status + file_size</text>
+<line x1="900" y1="620" x2="520" y2="620" stroke="#4b0082" stroke-width="2" />
+<polygon points="520,620 530.0,614.0 530.0,626.0" fill="#4b0082" />
+<text x="710.0" y="608.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">5. payload</text>
+<rect x="965" y="638" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="981" y="660" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68"><tspan>Rio_writen</tspan><tspan x="981" dy="17.5">cote serveur</tspan></text>
+<line x1="520" y1="710" x2="1510" y2="710" stroke="#6a5acd" stroke-width="2" />
+<polygon points="1510,710 1500.0,716.0 1500.0,704.0" fill="#6a5acd" />
+<text x="1015.0" y="698.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">6. Rio_readn + write</text>
+<rect x="1260" y="728" width="250" height="86" rx="16" fill="#f5f0ff" stroke="#7b3fc5" stroke-width="2" stroke-dasharray="6 5" />
+<text x="1276" y="750" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#3f2a68"><tspan>ftp_receive_file_payload</tspan><tspan x="1276" dy="17.5">lit par blocs</tspan></text>
+<line x1="520" y1="800" x2="180" y2="800" stroke="#4b0082" stroke-width="2" />
+<polygon points="180,800 190.0,794.0 190.0,806.0" fill="#4b0082" />
+<text x="350.0" y="788.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">7. succes + stats</text>
+<text x="90" y="870" font-size="16" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#4b0082"><tspan>Legende :</tspan><tspan x="90" dy="20.0">1. l&#x27;utilisateur saisit la commande</tspan><tspan x="90" dy="20.0">2. le client envoie request_t</tspan><tspan x="90" dy="20.0">3. le serveur lit le fichier et trouve</tspan><tspan x="90" dy="20.0">sa taille</tspan><tspan x="90" dy="20.0">4. le serveur annonce file_size</tspan><tspan x="90" dy="20.0">5. le serveur envoie le payload</tspan><tspan x="90" dy="20.0">6. le client lit le payload avec</tspan><tspan x="90" dy="20.0">Rio_readn</tspan><tspan x="90" dy="20.0">7. le client affiche le resultat</tspan></text>
+<text x="950" y="900" font-size="16" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#6a5acd"><tspan>Point cle : le client ne connait pas la taille du</tspan><tspan x="950" dy="20.0">fichier au depart. Le serveur la calcule avec</tspan><tspan x="950" dy="20.0">stat(), l&#x27;envoie dans response_t.file_size, puis le</tspan><tspan x="950" dy="20.0">client parametre Rio_readn avec cette valeur.</tspan></text>
+</svg>

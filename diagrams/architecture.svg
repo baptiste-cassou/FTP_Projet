@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1120" viewBox="0 0 1700 1120">
+<rect width="100%" height="100%" fill="#faf7ff" />
+<text x="50" y="56" font-size="32" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#4b0082">Architecture du projet FTP</text>
+<text x="50" y="92" font-size="18" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#6a5acd">Vue simple des modules, des repertoires locaux et des echanges reseau</text>
+<rect x="90" y="170" width="320" height="170" rx="20" fill="#f5f0ff" stroke="#6a5acd" stroke-width="2" />
+<text x="250.0" y="204" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">Utilisateur</text>
+<text x="108" y="230" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Tape :</tspan><tspan x="108" dy="17.5">get Transfert_q6</tspan><tspan x="108" dy="17.5"></tspan><tspan x="108" dy="17.5">Lit :</tspan><tspan x="108" dy="17.5">succes + stats</tspan></text>
+<rect x="500" y="140" width="340" height="220" rx="20" fill="#ede7ff" stroke="#4b0082" stroke-width="2" />
+<text x="670.0" y="174" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">clientFTP</text>
+<text x="518" y="200" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Parse la commande</tspan><tspan x="518" dy="17.5"></tspan><tspan x="518" dy="17.5">Construit request_t</tspan><tspan x="518" dy="17.5"></tspan><tspan x="518" dy="17.5">Lit response_t</tspan><tspan x="518" dy="17.5"></tspan><tspan x="518" dy="17.5">Ecrit le fichier</tspan></text>
+<rect x="940" y="140" width="340" height="220" rx="20" fill="#ede7ff" stroke="#4b0082" stroke-width="2" />
+<text x="1110.0" y="174" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">serverFTP</text>
+<text x="958" y="200" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Accepte la connexion</tspan><tspan x="958" dy="17.5"></tspan><tspan x="958" dy="17.5">Valide request_t</tspan><tspan x="958" dy="17.5"></tspan><tspan x="958" dy="17.5">Charge le fichier</tspan><tspan x="958" dy="17.5"></tspan><tspan x="958" dy="17.5">Envoie response_t +</tspan><tspan x="958" dy="17.5">payload</tspan></text>
+<rect x="500" y="450" width="340" height="200" rx="20" fill="#e6e6fa" stroke="#6a5acd" stroke-width="2" />
+<text x="670.0" y="484" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">ftp_protocol</text>
+<text x="518" y="510" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Validation du nom</tspan><tspan x="518" dy="17.5"></tspan><tspan x="518" dy="17.5">Construction de GET</tspan><tspan x="518" dy="17.5"></tspan><tspan x="518" dy="17.5">Lecture / ecriture</tspan><tspan x="518" dy="17.5">de request_t et</tspan><tspan x="518" dy="17.5">response_t</tspan></text>
+<rect x="940" y="450" width="340" height="200" rx="20" fill="#e6e6fa" stroke="#6a5acd" stroke-width="2" />
+<text x="1110.0" y="484" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">ftp_transfer</text>
+<text x="958" y="510" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Cote serveur :</tspan><tspan x="958" dy="17.5">charge le fichier</tspan><tspan x="958" dy="17.5"></tspan><tspan x="958" dy="17.5">Cote client :</tspan><tspan x="958" dy="17.5">recoit le payload</tspan><tspan x="958" dy="17.5">et l&#x27;ecrit</tspan></text>
+<rect x="90" y="760" width="290" height="170" rx="20" fill="#f5f0ff" stroke="#6a5acd" stroke-width="2" />
+<text x="235.0" y="794" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">data_client/</text>
+<text x="108" y="820" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Disque local du</tspan><tspan x="108" dy="17.5">client</tspan><tspan x="108" dy="17.5"></tspan><tspan x="108" dy="17.5">Exemple :</tspan><tspan x="108" dy="17.5">Transfert_q6</tspan></text>
+<rect x="1320" y="760" width="290" height="170" rx="20" fill="#f5f0ff" stroke="#6a5acd" stroke-width="2" />
+<text x="1465.0" y="794" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd">data_server/</text>
+<text x="1338" y="820" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Disque local du</tspan><tspan x="1338" dy="17.5">serveur</tspan><tspan x="1338" dy="17.5"></tspan><tspan x="1338" dy="17.5">Exemple :</tspan><tspan x="1338" dy="17.5">Transfert_q6</tspan></text>
+<rect x="520" y="760" width="740" height="170" rx="20" fill="#efeafe" stroke="#7b3fc5" stroke-width="2" />
+<text x="890.0" y="794" font-size="20" font-weight="bold" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#7b3fc5">csapp + ftp_runtime</text>
+<text x="538" y="820" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="start" fill="#2c2047"><tspan>Sockets : Open_clientfd / Open_listenfd</tspan><tspan x="538" dy="17.5">E/S robustes : Rio_readn / Rio_writen</tspan><tspan x="538" dy="17.5">Execution : Fork / Close / Fgets / chdir</tspan></text>
+<line x1="410" y1="255" x2="500" y2="255" stroke="#4b0082" stroke-width="2" />
+<polygon points="500,255 490.0,261.0 490.0,249.0" fill="#4b0082" />
+<text x="455.0" y="245.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">commande</text>
+<line x1="840" y1="255" x2="940" y2="255" stroke="#4b0082" stroke-width="2" />
+<polygon points="940,255 930.0,261.0 930.0,249.0" fill="#4b0082" />
+<text x="890.0" y="245.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">TCP</text>
+<line x1="670" y1="360" x2="670" y2="450" stroke="#4b0082" stroke-width="2" />
+<polygon points="670,450 664.0,440.0 676.0,440.0" fill="#4b0082" />
+<text x="670.0" y="380.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>request /</tspan><tspan x="670.0" dy="17.5">response</tspan></text>
+<line x1="1110" y1="360" x2="1110" y2="450" stroke="#4b0082" stroke-width="2" />
+<polygon points="1110,450 1104.0,440.0 1116.0,440.0" fill="#4b0082" />
+<text x="1110.0" y="380.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>taille +</tspan><tspan x="1110.0" dy="17.5">payload</tspan></text>
+<line x1="670" y1="650" x2="670" y2="760" stroke="#4b0082" stroke-width="2" />
+<polygon points="670,760 664.0,750.0 676.0,750.0" fill="#4b0082" />
+<text x="670.0" y="689.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">sockets</text>
+<line x1="1110" y1="650" x2="1465" y2="760" stroke="#4b0082" stroke-width="2" />
+<polygon points="1465,760 1453.672190149102,762.7714119112647 1457.2239025014026,751.3090675015676" fill="#4b0082" />
+<text x="1287.5" y="686.25" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>lecture</tspan><tspan x="1287.5" dy="17.5">locale</tspan></text>
+<line x1="520" y1="845" x2="380" y2="845" stroke="#4b0082" stroke-width="2" />
+<polygon points="380,845 390.0,839.0 390.0,851.0" fill="#4b0082" />
+<text x="450.0" y="835.0" font-size="14" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082">ecriture</text>
+<text x="850" y="983.75" font-size="18" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#4b0082"><tspan>Le client et le serveur sont des machines logiquement</tspan><tspan x="850" dy="22.5">distinctes.</tspan></text>
+<text x="850" y="1025.0" font-size="16" font-weight="normal" font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#6a5acd"><tspan>Le fichier doit passer par TCP, jamais par acces direct au disque du</tspan><tspan x="850" dy="20.0">serveur.</tspan></text>
+</svg>

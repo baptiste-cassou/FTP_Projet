@@ -56,5 +56,11 @@ run-server: $(SERVER_BIN)
 run-client: $(CLIENT_BIN)
 	./$(CLIENT_BIN) $(HOST)
 
+run-all: $(SERVER_BIN) $(CLIENT_BIN)
+	-./$(SERVER_BIN) > server.log 2>&1 &
+	sleep 1
+	-./$(CLIENT_BIN) $(HOST)
+	pkill -9 serverFTP
+
 clean:
-	rm -f $(BIN_DIR)/*.o $(SERVER_BIN) $(CLIENT_BIN)
+	rm -f $(BIN_DIR)/*.o $(SERVER_BIN) $(CLIENT_BIN) *.log

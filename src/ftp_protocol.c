@@ -56,7 +56,6 @@ void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t 
     response.status = (uint32_t)status;
     response.type = type;
     response.file_size = file_size;
-
     Rio_writen(connfd, &response, sizeof(response));
 }
 

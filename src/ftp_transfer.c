@@ -21,7 +21,80 @@ static int write_full(int fd, const void *buffer, size_t count)
 
     return 0;
 }
+/* marche pas encore
+int ftp_get_stats(const char *filename, uint64_t *file_size, ftp_status_t *status) {
+    struct stat st;
+    int fd = -1;
+    char *data = NULL;
+    uint64_t total = 0;
 
+    *file_size = 0;
+    *status = FTP_STATUS_ERR_IO;
+
+    if (stat(filename, &st) < 0) {
+        if (errno == ENOENT) {
+            *status = FTP_STATUS_ERR_NOT_FOUND;
+        }
+        return -1;
+    }
+    if (!S_ISREG(st.st_mode) || st.st_size < 0) {
+        return -1;
+    }
+    if ((uint64_t)st.st_size > (uint64_t)SIZE_MAX) {
+        return -1;
+    }
+
+    *file_size = (uint64_t)st.st_size;
+    fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        if (errno == ENOENT) {
+            *status = FTP_STATUS_ERR_NOT_FOUND;
+        }
+        return -1;
+    }
+    if (*file_size == 0) {
+        close(fd);
+        return 0;
+    }
+    close(fd);
+}
+
+int ftp_load_partial(const char *filename, void **buffer, size_t *size) {
+    int data;
+    int fd = open(filename, O_RDONLY);
+    uint64_t total = 0;
+
+
+    data = Malloc(size);
+    int readed = read(fd, data, *size);
+    while (total < *size) {
+        size_t remaining = (size_t)(*size - total);
+        ssize_t n = read(fd, data + (size_t)total, remaining);
+
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            close(fd);
+            Free(data);
+            *size = 0;
+            return -1;
+        }
+        if (n == 0) {
+            close(fd);
+            Free(data);
+            *size = 0;
+            return -1;
+        }
+
+        total += (uint64_t)n;
+    }
+
+    close(fd);
+    *buffer = data;
+    return 0;
+}
+*/
 int ftp_load_file(const char *filename, void **buffer, uint64_t *file_size, ftp_status_t *status)
 {
     struct stat st;

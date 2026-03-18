@@ -8,7 +8,7 @@
 #define FTP_PORT 2121
 #define FTP_PROTO_VERSION 1
 #define FTP_BLOCK_SIZE 4096
-#define NB_PROC 4
+#define NB_PROC 1
 #define FTP_SERVER_DATA_DIR "data_server"
 #define FTP_CLIENT_DATA_DIR "data_client"
 

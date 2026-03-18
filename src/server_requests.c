@@ -34,7 +34,6 @@ static void handle_get_request(int connfd, const request_t *request)
     void *buffer = NULL;
     uint64_t file_size = 0;
     ftp_status_t status = FTP_STATUS_ERR_IO;
-
     if (ftp_load_file(request->filename, &buffer, &file_size, &status) < 0) {
         ftp_send_response(connfd, status, request->type, 0);
         return;

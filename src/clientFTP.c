@@ -38,26 +38,35 @@ int ftp_client_run(const char *host)
     }
 
     printf("Connected to %s.\n", host);
+    while (1) {
     printf("FTP >>> ");
-    fflush(stdout);
-    if (Fgets(line, sizeof(line), stdin) == NULL) {
-        Close(clientfd);
-        return 0;
-    }
-    if (parse_get_command(line, filename) < 0) {
-        fprintf(stderr, "clientFTP: expected 'get <filename>'\n");
-        Close(clientfd);
-        return 1;
-    }
-    if (ftp_client_get(clientfd, filename, &stats) < 0) {
-        Close(clientfd);
-        return 1;
-    }
+        fflush(stdout);
+        if (Fgets(line, sizeof(line), stdin) == NULL) {
+            Close(clientfd);
+            return 0;
+        }
+        
+        if (strcmp(line, "quit") == 0 || strcmp(line, "q") == 0) {
+            fprintf(stderr, "bye\n");
+            Close(clientfd);
+            break; 
+        }
 
-    kbytes_per_second = (stats.bytes_received / 1024.0) / stats.seconds;
-    printf("Transfer successfully complete.\n");
-    printf("%" PRIu64 " bytes received in %.3f seconds (%.2f Kbytes/s).\n",
-           stats.bytes_received, stats.seconds, kbytes_per_second);
+        if (strcmp(line, "\n") == 0) continue;
+        
+        if (parse_get_command(line, filename) < 0) {
+            fprintf(stderr, "clientFTP: expected 'get <filename>'\n");
+            continue;
+        }
+        if (ftp_client_get(clientfd, filename, &stats) < 0) {
+            continue;
+        }
+
+        kbytes_per_second = (stats.bytes_received / 1024.0) / stats.seconds;
+        printf("Transfer successfully complete.\n");
+        printf("%" PRIu64 " bytes received in %.3f seconds (%.2f Kbytes/s).\n",
+            stats.bytes_received, stats.seconds, kbytes_per_second);
+    }
     Close(clientfd);
     return 0;
 }
@@ -69,5 +78,5 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    return ftp_client_run(argv[1]);
+    ftp_client_run(argv[1]);
 }

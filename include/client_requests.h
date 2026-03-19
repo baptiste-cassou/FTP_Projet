@@ -12,4 +12,7 @@ typedef struct {
 // Envoie une requete GET et enregistre la reponse recue dans `data_client/`.
 int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *stats);
 
+// Envoie une requete BYE pour terminer la session proprement
+int ftp_client_bye(int clientfd);
+
 #endif

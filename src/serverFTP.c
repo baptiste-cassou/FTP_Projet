@@ -86,7 +86,7 @@ static void worker_loop(int listenfd)
         g_connfd = connfd;
         ftp_handle_client(connfd);
         if (g_connfd >= 0) {
-            Close(g_connfd);
+            Close(g_connfd);    
             g_connfd = -1;
         }
     }

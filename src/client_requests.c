@@ -50,3 +50,30 @@ int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *sta
 
     return 0;
 }
+
+int ftp_client_bye(int clientfd)
+{
+    request_t request;
+    response_t response;
+
+    memset(&request, 0, sizeof(request));
+    request.version = FTP_PROTO_VERSION;
+    request.type = FTP_REQ_BYE;
+
+    Rio_writen(clientfd, &request, sizeof(request));
+    if (ftp_receive_response(clientfd, &response) < 0) {
+        return -1;
+    }
+    if (response.type != request.type) {
+        fprintf(stderr, "clientFTP: unexpected response type %u\n", response.type);
+        return -1;
+    }
+    
+    if (response.status != FTP_STATUS_OK) {
+        fprintf(stderr, "clientFTP: server returned %s for BYE\n",
+                ftp_status_to_string((ftp_status_t)response.status));
+        return -1;
+    }
+
+    return 0;
+}

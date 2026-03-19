@@ -30,10 +30,10 @@
 
 ## Étape II : Amélioration du serveur FTP
 
-- [ ] **Q8 - Découpage du fichier en blocs**  
+- [x] **Q8 - Découpage du fichier en blocs**  
   Passer à un transfert par blocs de taille fixe et définir clairement le protocole (taille, nombre/fin des blocs).
 
-- [ ] **Q9 - Plusieurs demandes par connexion**  
+- [x] **Q9 - Plusieurs demandes par connexion**  
   Garder la connexion ouverte pour plusieurs commandes, fermeture explicite par `bye`.
 
 - [ ] **Q10 - Gestion des pannes côté client + reprise**  

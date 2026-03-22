@@ -2,6 +2,7 @@
 #include "client_requests.h"
 #include "ftp_protocol.h"
 #include "ftp_transfer.h"
+#include "utils.h"
 
 int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *stats)
 {
@@ -9,6 +10,8 @@ int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *sta
     response_t response;
     struct timeval start;
     struct timeval end;
+    int offset;
+    int received;
 
     if (stats == NULL) {
         fprintf(stderr, "clientFTP: missing transfer stats buffer\n");
@@ -20,29 +23,31 @@ int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *sta
         fprintf(stderr, "clientFTP: invalid filename '%s'\n", filename);
         return -1;
     }
-
-    ftp_build_get_request(&request, filename);
+    offset = check_size_file(filename); // vérifie si le fichier existe déjà (si le fichier n'existe pas retourne 0)
+    ftp_build_get_request(&request, filename, offset);
     gettimeofday(&start, NULL);
     Rio_writen(clientfd, &request, sizeof(request));
 
     if (ftp_receive_response(clientfd, &response) < 0) {
         return -1;
     }
+
     if (response.type != request.type) {
         fprintf(stderr, "clientFTP: unexpected response type %u\n", response.type);
         return -1;
     }
-    if (response.status != FTP_STATUS_OK) {
+    if (response.status != FTP_STATUS_OK && response.status != FTP_STATUS_RESTART) {
         fprintf(stderr, "clientFTP: server returned %s for '%s'\n",
                 ftp_status_to_string((ftp_status_t)response.status), filename);
         return -1;
     }
-    if (ftp_receive_file_payload(clientfd, filename, response.file_size) < 0) {
+
+    if ((received = ftp_receive_file_payload(clientfd, filename, response.file_size, response.offset)) < 0) {
         return -1;
     }
 
     gettimeofday(&end, NULL);
-    stats->bytes_received = response.file_size;
+    stats->bytes_received = received;
     stats->seconds = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_usec - start.tv_usec) / 1000000.0;
     if (stats->seconds <= 0.0) {
         stats->seconds = 0.000001;

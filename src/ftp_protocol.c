@@ -18,12 +18,13 @@ int ftp_is_safe_filename(const char *filename)
     return 1;
 }
 
-void ftp_build_get_request(request_t *request, const char *filename)
+void ftp_build_get_request(request_t *request, const char *filename, int offset)
 {
     memset(request, 0, sizeof(*request));
     request->version = FTP_PROTO_VERSION;
     request->type = FTP_REQ_GET;
     request->block_size = FTP_BLOCK_SIZE;
+    request->offset = offset;
     strncpy(request->filename, filename, FTP_MAX_FILENAME - 1);
 }
 
@@ -48,7 +49,7 @@ int ftp_receive_request(int connfd, request_t *request)
     return 1;
 }
 
-void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t file_size)
+void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t file_size, int offset)
 {
     response_t response;
 
@@ -56,6 +57,7 @@ void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t 
     response.status = (uint32_t)status;
     response.type = type;
     response.file_size = file_size;
+    response.offset = offset;
     Rio_writen(connfd, &response, sizeof(response));
 }
 

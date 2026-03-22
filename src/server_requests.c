@@ -58,7 +58,7 @@ static void handle_get_request(int connfd, const request_t *request)
         if (errno == ENOENT) {
             status = FTP_STATUS_ERR_NOT_FOUND;
         }
-        ftp_send_response(connfd, status, request->type, 0);
+        ftp_send_response(connfd, status, request->type, 0, 0);
         return;
     }
 
@@ -67,12 +67,21 @@ static void handle_get_request(int connfd, const request_t *request)
         if (errno == ENOENT) {
             status = FTP_STATUS_ERR_NOT_FOUND;
         }
-        ftp_send_response(connfd, status, request->type, 0);
+        ftp_send_response(connfd, status, request->type, 0, 0);
         return;
     }
-
-    ftp_send_response(connfd, FTP_STATUS_OK, request->type, (uint64_t)st.st_size);
-
+    if (request->offset == 0) {
+        ftp_send_response(connfd, FTP_STATUS_OK, request->type, (uint64_t)st.st_size, request->offset);
+    } else {
+        
+        if (lseek(fd, (off_t)request->offset, SEEK_SET) < 0) {
+            if (errno == EINVAL) {
+                 ftp_send_response(connfd, FTP_STATUS_ERR_BAD_REQUEST, request->type, (uint64_t)st.st_size, 0); //si le lseek echoue
+                 return;
+            }
+        }
+        ftp_send_response(connfd, FTP_STATUS_RESTART, request->type, (uint64_t)st.st_size, request->offset);
+    }
     while(1){
         ssize_t n = read(fd, buffer, sizeof(buffer));
         if (n < 0) {
@@ -112,7 +121,7 @@ void ftp_handle_client(int connfd)
         request.filename[FTP_MAX_FILENAME - 1] = '\0';
 
         if (!validate_request(&request, &status)) {
-            ftp_send_response(connfd, status, request.type, 0);
+            ftp_send_response(connfd, status, request.type, 0, 0);
             continue;
         }
         
@@ -121,10 +130,10 @@ void ftp_handle_client(int connfd)
             handle_get_request(connfd, &request);
             break;
         case FTP_REQ_BYE:
-            ftp_send_response(connfd, FTP_STATUS_OK, request.type, 0);
+            ftp_send_response(connfd, FTP_STATUS_OK, request.type, 0, 0);
             return;
         default:
-            ftp_send_response(connfd, FTP_STATUS_ERR_UNSUPPORTED, request.type, 0);
+            ftp_send_response(connfd, FTP_STATUS_ERR_UNSUPPORTED, request.type, 0, 0);
             break;
         }
     }

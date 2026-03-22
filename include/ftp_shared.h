@@ -36,7 +36,8 @@ typedef enum {
     FTP_STATUS_ERR_IO = 3,
     FTP_STATUS_ERR_AUTH_REQUIRED = 4,
     FTP_STATUS_ERR_AUTH_FAILED = 5,
-    FTP_STATUS_ERR_UNSUPPORTED = 6
+    FTP_STATUS_ERR_UNSUPPORTED = 6,
+    FTP_STATUS_RESTART = 7
 } ftp_status_t;
 
 // Requete binaire envoyee par le client vers le serveur.

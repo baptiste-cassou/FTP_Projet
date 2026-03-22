@@ -15,6 +15,7 @@ PROTOCOL_SRC := $(SRC_DIR)/ftp_protocol.c
 TRANSFER_SRC := $(SRC_DIR)/ftp_transfer.c
 SERVER_REQ_SRC := $(SRC_DIR)/server_requests.c
 CLIENT_REQ_SRC := $(SRC_DIR)/client_requests.c
+UTILS_SRC := $(SRC_DIR)/utils.c
 
 SERVER_OBJ := $(BIN_DIR)/serverFTP.o
 CLIENT_OBJ := $(BIN_DIR)/clientFTP.o
@@ -24,8 +25,9 @@ PROTOCOL_OBJ := $(BIN_DIR)/ftp_protocol.o
 TRANSFER_OBJ := $(BIN_DIR)/ftp_transfer.o
 SERVER_REQ_OBJ := $(BIN_DIR)/server_requests.o
 CLIENT_REQ_OBJ := $(BIN_DIR)/client_requests.o
+UTILS_OBJ := $(BIN_DIR)/utils.o
 
-COMMON_FTP_OBJS := $(COMMON_OBJ) $(RUNTIME_OBJ) $(PROTOCOL_OBJ) $(TRANSFER_OBJ)
+COMMON_FTP_OBJS := $(COMMON_OBJ) $(RUNTIME_OBJ) $(PROTOCOL_OBJ) $(TRANSFER_OBJ) $(UTILS_OBJ)
 SERVER_OBJS := $(SERVER_OBJ) $(COMMON_FTP_OBJS) $(SERVER_REQ_OBJ)
 CLIENT_OBJS := $(CLIENT_OBJ) $(COMMON_FTP_OBJS) $(CLIENT_REQ_OBJ)
 
@@ -57,7 +59,7 @@ run-client: $(CLIENT_BIN)
 	./$(CLIENT_BIN) $(HOST)
 
 run-all: $(SERVER_BIN) $(CLIENT_BIN)
-	-./$(SERVER_BIN) > server.log 2>&1 &
+	-./$(SERVER_BIN) > logs/server.log 2>&1 &
 	sleep 1
 	-./$(CLIENT_BIN) $(HOST)
 	pkill -9 serverFTP

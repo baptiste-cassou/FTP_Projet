@@ -10,13 +10,13 @@
 int ftp_is_safe_filename(const char *filename);
 
 // Construit une requete GET complete a envoyer au serveur.
-void ftp_build_get_request(request_t *request, const char *filename);
+void ftp_build_get_request(request_t *request, const char *filename, int offset);
 
 // Lit exactement une requete `request_t` depuis une socket serveur.
 int ftp_receive_request(int connfd, request_t *request);
 
 // Envoie une structure `response_t` complete au client.
-void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t file_size);
+void ftp_send_response(int connfd, ftp_status_t status, uint32_t type, uint64_t file_size, int offset);
 
 // Lit exactement une reponse `response_t` depuis une socket client.
 int ftp_receive_response(int clientfd, response_t *response);

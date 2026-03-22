@@ -36,7 +36,7 @@
 - [x] **Q9 - Plusieurs demandes par connexion**  
   Garder la connexion ouverte pour plusieurs commandes, fermeture explicite par `bye`.
 
-- [ ] **Q10 - Gestion des pannes côté client + reprise**  
+- [x] **Q10 - Gestion des pannes côté client + reprise**  
   Conserver l'avancement localement et reprendre un transfert interrompu à partir de l'offset correct.
 
 ## Étape III : Répartition de charge

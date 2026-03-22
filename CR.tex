@@ -293,7 +293,10 @@ Q4 & Réalisée & Gestion propre de \texttt{SIGINT} avec propagation aux workers
 Q5 & Réalisée & Séparation explicite entre \texttt{data\_server/} et \texttt{data\_client/}. \\
 Q6 & Réalisée & Réception d'une requête, validation, génération d'une réponse, traitement de \texttt{GET}, transfert binaire. \\
 Q7 & Réalisée & Invite interactive \texttt{ftp> get fichier}, récupération du fichier, message final et statistiques. \\
-Q8 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées : blocs, multi-requêtes, reprise, esclaves, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
+Q8 & réalisée & Le fichier est correctement découpé et envoyé au client. \\
+Q9 & réalisée & Le client peut dorenevant faire plusieurs téléchargements. \\
+Q10 & réalisée & Récupération d'un fichier tronqué et complétion du transfert. \\
+Q11 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées :reprise, esclaves, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -304,6 +307,7 @@ Q8 à Q17 & Non réalisées & Les extensions futures ne sont pas encore impléme
 \begin{lstlisting}[style=bash]
 make run-server
 make run-client HOST=127.0.0.1
+make run-all
 \end{lstlisting}
 
 Puis, côté client :
@@ -350,6 +354,7 @@ Protocole applicatif & \texttt{include/ftp\_shared.h}, \texttt{src/ftp\_protocol
 Transfert de fichier & \texttt{src/ftp\_transfer.c} & Chargement d'un fichier côté serveur et écriture du payload côté client. \\
 Préparation d'exécution & \texttt{src/ftp\_runtime.c} & Changement vers le bon répertoire de travail local. \\
 Bibliothèque système & \texttt{src/csapp.c}, \texttt{include/csapp.h} & Wrappers robustes pour sockets, processus, signaux et E/S. \\
+Fonction utilitaire & \texttt{src/utils.c}, \texttt{include/utils.h} & Fonctions utilitaires. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -367,6 +372,8 @@ Bibliothèque système & \texttt{src/csapp.c}, \texttt{include/csapp.h} & Wrappe
 \texttt{data\_server/} & Contient les fichiers disponibles côté serveur, c'est-à-dire les fichiers que le client peut demander avec \texttt{GET}. \\
 \texttt{data\_client/} & Contient les fichiers reçus depuis le serveur. \\
 \texttt{bin/} & Contient les objets compilés et les binaires finaux. \\
+\texttt{scripts/} & Contient les scripts de test et d'exécution. \\
+\texttt{logs/} & Contient les logs de test et d'exécution. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -452,6 +459,7 @@ une base extensible.
 \codecell{parse_get_command} & \codecell{src/clientFTP.c} & Analyse la ligne saisie par l'utilisateur. N'accepte que la forme \texttt{get <nom\_fichier>} et refuse les commandes invalides. \\
 \codecell{ftp_client_run} & \codecell{src/clientFTP.c} & Fonction principale du client. Se place dans \texttt{data\_client/}, ouvre la connexion, lit la commande interactive, lance le \texttt{GET}, puis affiche les statistiques. \\
 \codecell{ftp_client_get} & \codecell{src/client_requests.c} & Gère tout le \texttt{GET} côté client : validation du nom de fichier, construction de la requête, envoi, réception de la réponse, réception du payload, mesure du temps. \\
+\codecell{check_size_file} & \codecell{src/utils.c} & retourne la taille d'un fichier si il est valide. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -629,6 +637,7 @@ Ensuite, \texttt{ftp\_client\_get()} :
 
 \begin{enumerate}[leftmargin=*]
     \item vérifie que le nom de fichier est sûr ;
+    \item vérifie que le fichier n'existe pas déjà dans \texttt{data\_client/};
     \item initialise \texttt{request\_t} via \texttt{ftp\_build\_get\_request()} ;
     \item mesure le temps de transfert ;
     \item envoie la requête au serveur avec \texttt{Rio\_writen()}.
@@ -643,6 +652,7 @@ Le worker serveur reçoit la connexion puis :
     \item vérifie version, type et nom de fichier avec \texttt{validate\_request()} ;
     \item traite le \texttt{GET} avec \texttt{handle\_get\_request()} ;
     \item charge le fichier demandé avec \texttt{ftp\_load\_file()} ;
+    \item décalle la lecture au bon offset en cas de reprise ;
     \item envoie \texttt{response\_t} ;
     \item envoie le contenu binaire du fichier.
 \end{enumerate}
@@ -654,6 +664,7 @@ Le client :
 \begin{enumerate}[leftmargin=*]
     \item lit \texttt{response\_t} avec \texttt{ftp\_receive\_response()} ;
     \item vérifie le statut ;
+    \item décale la lecture au bon offset en cas de reprise ;
     \item si le statut est \texttt{OK}, lit exactement \texttt{file\_size} octets ;
     \item écrit ces octets dans un fichier local avec \texttt{ftp\_receive\_file\_payload()} ;
     \item calcule la durée et le débit moyen ;
@@ -677,7 +688,7 @@ Le client :
 Le projet suit une règle simple :
 
 \begin{quote}
-\textbf{Une seule requête par connexion TCP.}
+\textbf{Une seule requête à la fois.}
 \end{quote}
 
 Cette décision simplifie fortement le protocole :
@@ -687,10 +698,10 @@ Cette décision simplifie fortement le protocole :
     \item il envoie une requête ;
     \item il reçoit une réponse ;
     \item il reçoit éventuellement un fichier ;
-    \item la connexion est ensuite fermée.
+    \item il renvoie une autre commande ou met fin à la connexion ;
 \end{itemize}
 
-Il n'y a donc pas, à ce stade, de boucle de commandes persistante côté serveur.
+Il y a y a une boucle persitante coté clients pour permettre d'envoyer plusieurs commandes.
 
 \subsection{Parce que la taille des échanges est connue}
 
@@ -744,6 +755,7 @@ Cette logique évite les processus zombies et les ressources laissées ouvertes.
 \texttt{get inexistant.txt} & Le client reçoit une erreur \texttt{NOT\_FOUND} et l'affiche correctement. \\
 \texttt{abc} & La commande est rejetée localement par le parsing du client. \\
 \texttt{get ../secret} & Le nom de fichier est rejeté par la validation de sécurité. \\
+\texttt{test_transfert} & Un fichier de test est généré coté serveur, tronqué coté client, et le client termine le téléchargement correctement \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -753,9 +765,6 @@ Cette logique évite les processus zombies et les ressources laissées ouvertes.
 Même si l'étape I est terminée, plusieurs limites sont normales à ce stade :
 
 \begin{itemize}[leftmargin=*]
-    \item une seule requête par connexion ;
-    \item chargement complet du fichier en mémoire côté serveur ;
-    \item pas encore de reprise sur panne ;
     \item pas de \texttt{put}, \texttt{ls}, \texttt{rm} ;
     \item pas d'authentification ;
     \item sérialisation applicative encore simplifiée.
@@ -773,6 +782,8 @@ d'ordre des octets adaptées.
 Le projet obtenu est un mini-FTP pédagogique cohérent et correctement structuré.
 La partie demandée par l'étape I du sujet est terminée jusqu'à Q7 incluse.
 
+La partie 2 est également terminée jusqu'à Q10 incluse, avec un transfert par blocs,
+la possibilité de faire plusieurs téléchargements dans la même session et de reprendre un téléchargement arrêté.
 Sur le plan technique, ce projet montre :
 
 \begin{itemize}[leftmargin=*]
@@ -787,8 +798,6 @@ La suite logique du travail serait :
 
 \begin{enumerate}[leftmargin=*]
     \item sérialiser complètement \texttt{request\_t} et \texttt{response\_t} ;
-    \item passer à un transfert par blocs ;
-    \item autoriser plusieurs requêtes par connexion ;
     \item implémenter les commandes avancées et l'authentification demandées dans la suite du sujet.
 \end{enumerate}
 

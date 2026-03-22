@@ -70,17 +70,16 @@ static void handle_get_request(int connfd, const request_t *request)
         ftp_send_response(connfd, status, request->type, 0, 0);
         return;
     }
-    if (request->offset == 0) {
-        ftp_send_response(connfd, FTP_STATUS_OK, request->type, (uint64_t)st.st_size, request->offset);
-    } else {
-        
+
+    if (request->offset > 0 && request->offset <= (uint64_t)st.st_size) {
         if (lseek(fd, (off_t)request->offset, SEEK_SET) < 0) {
-            if (errno == EINVAL) {
-                 ftp_send_response(connfd, FTP_STATUS_ERR_BAD_REQUEST, request->type, (uint64_t)st.st_size, 0); //si le lseek echoue
-                 return;
-            }
+            ftp_send_response(connfd, FTP_STATUS_ERR_IO, request->type, (uint64_t)st.st_size, 0);
+            Close(fd);
+            return;
         }
         ftp_send_response(connfd, FTP_STATUS_RESTART, request->type, (uint64_t)st.st_size, request->offset);
+    } else {
+        ftp_send_response(connfd, FTP_STATUS_OK, request->type, (uint64_t)st.st_size, 0);
     }
     while(1){
         ssize_t n = read(fd, buffer, sizeof(buffer));

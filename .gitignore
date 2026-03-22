@@ -55,3 +55,7 @@ dkms.conf
 # debug information files
 *.dwo
 *.log
+CR.toc
+CR.log
+CR.out
+CR.aux

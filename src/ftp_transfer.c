@@ -89,19 +89,15 @@ int ftp_load_file(const char *filename, void **buffer, uint64_t *file_size, ftp_
     return 0;
 }
 
-int ftp_receive_file_payload(int connfd, const char *filename, uint64_t file_size, int offset)
+int ftp_receive_file_payload(int connfd, const char *filename, uint64_t file_size, off_t offset)
 {
     int fd;
     uint64_t remaining;
     int received = 0;
-    if (offset == 0) {
-        fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
-        remaining = file_size;
-    } else {
-        fd = open(filename, O_WRONLY | O_CREAT , DEF_MODE);
-        remaining = file_size - offset;
-        lseek(fd, 0, SEEK_END);
-    }
+    if (offset > file_size) offset = 0; // check de sécurité si le fichier à été modif entre temps coté serveur alors on écrase de 0 le fichier
+    fd = open(filename, O_WRONLY | O_CREAT | ((offset == 0) ? O_TRUNC : 0), DEF_MODE);
+    remaining = file_size - offset;
+
     char buffer[FTP_BLOCK_SIZE];
 
     if (fd < 0) {
@@ -109,6 +105,8 @@ int ftp_receive_file_payload(int connfd, const char *filename, uint64_t file_siz
         return -1;
     }
 
+    lseek(fd, offset, SEEK_SET); //on décalle de l'offset nécéssaire (si il n'y a pas d'offset alors pas de seek car offset == 0)
+    
     while (remaining > 0) {
         size_t chunk = remaining < sizeof(buffer) ? (size_t)remaining : sizeof(buffer);
         ssize_t n = Rio_readn(connfd, buffer, chunk);

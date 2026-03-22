@@ -8,6 +8,6 @@
 int ftp_load_file(const char *filename, void **buffer, uint64_t *file_size, ftp_status_t *status);
 
 // Lit `file_size` octets depuis la socket et les ecrit dans `filename`.
-int ftp_receive_file_payload(int connfd, const char *filename, uint64_t file_size, int offset);
+int ftp_receive_file_payload(int connfd, const char *filename, uint64_t file_size, off_t offset);
 
 #endif

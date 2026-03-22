@@ -48,14 +48,7 @@ static void child_sigint_handler(int sig)
 
 static void install_handler(void (*handler)(int))
 {
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    if (sigaction(SIGINT, &sa, NULL) < 0) {
-        unix_error("sigaction error");
-    }
+    Signal(SIGINT, handler); //passage sur la fonction de csapp
 }
 
 static void worker_loop(int listenfd)

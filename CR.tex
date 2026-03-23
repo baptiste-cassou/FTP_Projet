@@ -23,7 +23,6 @@
 \usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{listings}
-\usepackage{fontawesome5}
 
 % ============================================================
 % Couleurs violet/lavande
@@ -46,7 +45,7 @@
     bottom=2.5cm,
     left=2.5cm,
     right=2.5cm,
-    headheight=22pt
+    headheight=23pt
 }
 
 % ============================================================
@@ -262,11 +261,9 @@ mettre en place un protocole client/serveur cohérent, lisible et suffisamment
 propre pour servir de base aux questions suivantes du sujet.
 
 \begin{infobox}
-Le dépôt courant réalise complètement l'étape I du sujet :
-\textbf{les questions Q1 à Q7 sont terminées}. Le client fonctionne maintenant sous
-la forme \texttt{./clientFTP <host>}, affiche l'invite \texttt{ftp>}, accepte
-\texttt{get <nom\_fichier>}, reçoit le fichier et affiche les statistiques de
-transfert demandées.
+Le dépôt courant couvre désormais les questions \textbf{Q1 à Q10}, puis prépare
+la \textbf{Q11}. Les étapes I et II du sujet sont donc réalisées, tandis que
+l'étape III commence avec la mise en place de l'architecture maître / esclaves.
 \end{infobox}
 
 L'objectif de ce compte-rendu est double :
@@ -276,9 +273,9 @@ L'objectif de ce compte-rendu est double :
     \item expliquer pourquoi le code fonctionne, en particulier du point de vue réseau.
 \end{itemize}
 
-\newpage \section{État d'avancement}
+\newpage \subsection{Bilan global}
 
-\subsection{Bilan question par question}
+\subsubsection{Bilan question par question}
 
 \begin{center}
 \small
@@ -296,30 +293,23 @@ Q7 & Réalisée & Invite interactive \texttt{ftp> get fichier}, récupération d
 Q8 & réalisée & Le fichier est correctement découpé et envoyé au client. \\
 Q9 & réalisée & Le client peut dorenevant faire plusieurs téléchargements. \\
 Q10 & réalisée & Récupération d'un fichier tronqué et complétion du transfert. \\
-Q11 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées :reprise, esclaves, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
+Q11 & réalisée & Définition d'un nombre statique d'esclaves et réservation de ports dédiés pour le maître et les esclaves. \\
+Q12 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées : interconnexion maître/esclaves, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{examplebox}
-\textbf{Scénario actuellement supporté.}
+\begin{infobox}
+\textbf{État synthétique du dépôt.}
 
-\begin{lstlisting}[style=bash]
-make run-server
-make run-client HOST=127.0.0.1
-make run-all
-\end{lstlisting}
+\begin{itemize}[leftmargin=*]
+    \item les étapes I et II sont réalisées jusqu'à Q10 ;
+    \item la question 11 prépare l'architecture maître / esclaves ;
+    \item les questions Q12 à Q17 restent à implémenter.
+\end{itemize}
+\end{infobox}
 
-Puis, côté client :
-
-\begin{lstlisting}
-ftp> get Transfert_q6
-Transfer successfully complete.
-X bytes received in Y seconds (Z Kbytes/s).
-\end{lstlisting}
-\end{examplebox}
-
-\newpage \section{Architecture générale du projet}
+\newpage \section{Architecture}
 
 \subsection{Principe d'organisation}
 
@@ -378,7 +368,7 @@ Fonction utilitaire & \texttt{src/utils.c}, \texttt{include/utils.h} & Fonctions
 \end{tabularx}
 \end{center}
 
-\newpage \section{Client et serveur : deux machines différentes}
+\newpage \section{Client et serveur et description du protocole}
 
 \begin{warningbox}
 Même si les tests locaux se font souvent sur une seule machine, il faut raisonner
@@ -405,15 +395,16 @@ Cette manière de raisonner explique plusieurs choix du projet :
     \item le contenu du fichier est envoyé comme un flux d'octets TCP.
 \end{itemize}
 
-\newpage \section{Description du protocole}
-
 \subsection{Constantes et structures communes}
 
 Le fichier \texttt{include/ftp\_shared.h} définit les éléments communs au client
 et au serveur.
 
 \begin{itemize}[leftmargin=*]
-    \item \texttt{FTP\_PORT} fixe le port d'écoute à \texttt{2121}.
+    \item \texttt{FTP\_MASTER\_PORT} réserve le port \texttt{2121} au serveur maître.
+    \item \texttt{NB\_SLAVES} fixe statiquement le nombre de serveurs esclaves.
+    \item \texttt{FTP\_SLAVE\_CLIENT\_BASE\_PORT} et \texttt{FTP\_SLAVE\_CTRL\_BASE\_PORT} définissent les plages de ports utilisées par les esclaves.
+    \item \texttt{FTP\_SLAVE\_CLIENT\_PORT(id)} et \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} calculent les ports effectifs d'un esclave donné.
     \item \texttt{FTP\_PROTO\_VERSION} identifie la version courante du protocole.
     \item \texttt{FTP\_BLOCK\_SIZE} fixe la taille du tampon utilisé pour recevoir
     un payload côté client.
@@ -446,9 +437,9 @@ commande \texttt{GET} est exploitée aujourd'hui, les types futurs \texttt{PUT},
 \texttt{LS}, \texttt{RM}, \texttt{BYE} et \texttt{AUTH} existent déjà pour garder
 une base extensible.
 
-\newpage \section{Fonctions importantes et rôle de chacune}
+\newpage \subsection{Fonctions importantes et rôle de chacune}
 
-\subsection{Fonctions du client}
+\subsubsection{Fonctions du client}
 
 \begin{center}
 \small
@@ -464,7 +455,7 @@ une base extensible.
 \end{tabularx}
 \end{center}
 
-\subsection{Fonctions du serveur}
+\subsubsection{Fonctions du serveur}
 
 \begin{center}
 \small
@@ -485,7 +476,7 @@ une base extensible.
 \end{tabularx}
 \end{center}
 
-\subsection{Fonctions du protocole, du transfert et des helpers}
+\subsubsection{Fonctions du protocole, du transfert et des helpers}
 
 \begin{center}
 \small
@@ -507,7 +498,7 @@ une base extensible.
 \end{tabularx}
 \end{center}
 
-\subsection{Wrappers \texttt{csapp} réellement utilisés}
+\subsubsection{Wrappers \texttt{csapp} réellement utilisés}
 
 \begin{center}
 \small
@@ -527,9 +518,9 @@ une base extensible.
 \end{tabularx}
 \end{center}
 
-\newpage \section{Comment ça marche côté réseau}
+\subsection{Comment ça marche côté réseau}
 
-\subsection{Pourquoi TCP convient au projet}
+\subsubsection{Pourquoi TCP convient au projet}
 
 Le projet repose sur TCP. C'est un choix naturel pour un mini-FTP, car TCP fournit :
 
@@ -548,11 +539,12 @@ Le projet s'appuie donc sur \texttt{Rio\_readn()} et \texttt{Rio\_writen()}
 pour garantir l'envoi et la réception complets des messages attendus.
 \end{sciencebox}
 
-\subsection{Ouverture de la connexion}
+\subsubsection{Ouverture de la connexion}
 
-\subsubsection*{Côté serveur}
+\paragraph{Côté serveur}
 
-Le serveur appelle \texttt{Open\_listenfd(FTP\_PORT)}. Dans \texttt{csapp}, cela
+Le programme d'écoute appelle \texttt{Open\_listenfd()} sur le port qui lui est
+attribué. Dans \texttt{csapp}, cela
 effectue les étapes classiques :
 
 \begin{enumerate}[leftmargin=*]
@@ -563,9 +555,9 @@ effectue les étapes classiques :
     \item \texttt{bind()} puis \texttt{listen()}.
 \end{enumerate}
 
-\subsubsection*{Côté client}
+\paragraph{Côté client}
 
-Le client appelle \texttt{Open\_clientfd(host, FTP\_PORT)}. Cette fonction :
+Le client appelle \texttt{Open\_clientfd(host, FTP\_MASTER\_PORT)}. Cette fonction :
 
 \begin{enumerate}[leftmargin=*]
     \item résout le nom d'hôte avec \texttt{getaddrinfo()} ;
@@ -574,7 +566,7 @@ Le client appelle \texttt{Open\_clientfd(host, FTP\_PORT)}. Cette fonction :
     \item lance \texttt{connect()}.
 \end{enumerate}
 
-\subsection{Pourquoi les fonctions \texttt{hton}/\texttt{ntoh} sont importantes}
+\subsubsection{Pourquoi les fonctions \texttt{hton}/\texttt{ntoh} sont importantes}
 
 \begin{warningbox}
 Deux machines différentes peuvent ne pas représenter les entiers de la même façon
@@ -608,7 +600,11 @@ conversion d'ordre des octets sur tous les champs entiers de \texttt{request\_t}
 et \texttt{response\_t}, y compris les tailles de fichier et offsets.
 \end{tipbox}
 
-\newpage \section{Déroulement complet d'une requête \texttt{GET}}
+\newpage \section{Etape 1 : Serveur FTP de base}
+
+L'étape I couvre les questions Q1 à Q7 : définition des structures de requête et
+de réponse, création du client et du serveur, pool de processus, répertoires de
+travail, traitement de \texttt{GET} et affichage des statistiques côté client.
 
 \subsection{Démarrage du serveur}
 
@@ -681,9 +677,9 @@ Le client :
 \end{center}
 \end{examplebox}
 
-\newpage \section{Pourquoi l'implémentation fonctionne}
+\subsection{Pourquoi l'implémentation fonctionne}
 
-\subsection{Parce qu'une connexion transporte une seule requête}
+\subsubsection{Parce qu'une connexion transporte une seule requête}
 
 Le projet suit une règle simple :
 
@@ -703,7 +699,7 @@ Cette décision simplifie fortement le protocole :
 
 Il y a y a une boucle persitante coté clients pour permettre d'envoyer plusieurs commandes.
 
-\subsection{Parce que la taille des échanges est connue}
+\subsubsection{Parce que la taille des échanges est connue}
 
 Le serveur et le client savent toujours combien d'octets attendre :
 
@@ -715,7 +711,7 @@ Le serveur et le client savent toujours combien d'octets attendre :
 
 Cette propriété évite les ambiguïtés dans le flux TCP.
 
-\subsection{Parce que la sécurité minimale est centralisée}
+\subsubsection{Parce que la sécurité minimale est centralisée}
 
 La fonction \texttt{ftp\_is\_safe\_filename()} bloque les demandes dangereuses,
 comme :
@@ -730,7 +726,7 @@ comme :
 Le contrôle est volontairement centralisé pour que client et serveur reposent sur
 la même règle de validation.
 
-\subsection{Parce que l'arrêt du serveur est propre}
+\subsubsection{Parce que l'arrêt du serveur est propre}
 
 Le serveur gère correctement l'arrêt via \texttt{SIGINT} :
 
@@ -743,8 +739,13 @@ Le serveur gère correctement l'arrêt via \texttt{SIGINT} :
 
 Cette logique évite les processus zombies et les ressources laissées ouvertes.
 
-\newpage \section{Tests réalisés}
+\newpage \section{Etape 2 : Amélioration du serveur FTP}
 
+L'étape II couvre les questions Q8 à Q10. Elle ajoute le transfert par blocs,
+la possibilité d'enchaîner plusieurs commandes dans une même session et la
+reprise d'un téléchargement interrompu à partir d'un offset.
+
+\subsection{Tests réalisés}
 \begin{center}
 \small
 \begin{tabularx}{\textwidth}{@{}L{0.28\textwidth}L{0.64\textwidth}@{}}
@@ -755,14 +756,14 @@ Cette logique évite les processus zombies et les ressources laissées ouvertes.
 \texttt{get inexistant.txt} & Le client reçoit une erreur \texttt{NOT\_FOUND} et l'affiche correctement. \\
 \texttt{abc} & La commande est rejetée localement par le parsing du client. \\
 \texttt{get ../secret} & Le nom de fichier est rejeté par la validation de sécurité. \\
-\texttt{test_transfert} & Un fichier de test est généré coté serveur, tronqué coté client, et le client termine le téléchargement correctement \\
+\texttt{test\_transfert} & Un fichier de test est généré côté serveur, tronqué côté client, et le client termine le téléchargement correctement. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\newpage \section{Limites actuelles}
+\subsection{Limites actuelles}
 
-Même si l'étape I est terminée, plusieurs limites sont normales à ce stade :
+Même si les étapes I et II sont terminées, plusieurs limites sont normales à ce stade :
 
 \begin{itemize}[leftmargin=*]
     \item pas de \texttt{put}, \texttt{ls}, \texttt{rm} ;
@@ -777,28 +778,59 @@ hétérogènes en sérialisant explicitement les champs numériques avec les con
 d'ordre des octets adaptées.
 \end{sciencebox}
 
-\newpage \section{Conclusion}
+\newpage \section{Etape 3 : Répartition de charge entre serveurs FTP}
 
-Le projet obtenu est un mini-FTP pédagogique cohérent et correctement structuré.
-La partie demandée par l'étape I du sujet est terminée jusqu'à Q7 incluse.
+L'étape III introduit une architecture maître / esclaves. À ce stade, seule la
+question 11 est réalisée dans le code : le projet distingue le port du maître,
+fixe un nombre statique d'esclaves et réserve des plages de ports dédiées aux
+serveurs esclaves.
 
-La partie 2 est également terminée jusqu'à Q10 incluse, avec un transfert par blocs,
-la possibilité de faire plusieurs téléchargements dans la même session et de reprendre un téléchargement arrêté.
-Sur le plan technique, ce projet montre :
+\subsection{Question 11 réalisée}
 
 \begin{itemize}[leftmargin=*]
-    \item comment organiser un client et un serveur en C ;
-    \item comment séparer interface, logique métier, protocole et transfert ;
-    \item comment utiliser des sockets TCP proprement ;
-    \item comment fiabiliser les échanges avec \texttt{Rio\_readn()} et \texttt{Rio\_writen()} ;
-    \item pourquoi les conversions \texttt{htons}, \texttt{htonl}, \texttt{ntohs}, \texttt{ntohl} comptent dès que l'on pense réellement à deux machines distinctes.
+    \item \texttt{FTP\_MASTER\_PORT} réserve le port \texttt{2121} au programme \texttt{masterFTP} ;
+    \item \texttt{NB\_SLAVES} fixe le nombre d'esclaves à \texttt{2} ;
+    \item \texttt{FTP\_SLAVE\_CLIENT\_BASE\_PORT} et \texttt{FTP\_SLAVE\_CTRL\_BASE\_PORT} définissent les bases \texttt{3001} et \texttt{4001} ;
+    \item \texttt{FTP\_SLAVE\_CLIENT\_PORT(id)} et \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} calculent les ports de chaque esclave ;
+    \item le binaire \texttt{serverFTP} peut maintenant être lancé avec un identifiant d'esclave pour écouter sur le bon port client ;
+    \item le binaire \texttt{masterFTP} existe désormais séparément dans la chaîne de compilation.
 \end{itemize}
 
-La suite logique du travail serait :
+Concrètement, avec \texttt{NB\_SLAVES = 2}, on obtient :
 
-\begin{enumerate}[leftmargin=*]
-    \item sérialiser complètement \texttt{request\_t} et \texttt{response\_t} ;
-    \item implémenter les commandes avancées et l'authentification demandées dans la suite du sujet.
-\end{enumerate}
+\begin{itemize}[leftmargin=*]
+    \item esclave 1 : port client \texttt{3001}, port de contrôle \texttt{4001} ;
+    \item esclave 2 : port client \texttt{3002}, port de contrôle \texttt{4002}.
+\end{itemize}
+
+\subsection{Questions restantes}
+
+Les questions Q12 à Q14 ne sont pas encore réalisées. Il reste notamment à :
+
+\begin{itemize}[leftmargin=*]
+    \item établir les connexions maître / esclaves au démarrage ;
+    \item stocker les informations utiles sur chaque esclave ;
+    \item rediriger ensuite le client vers l'esclave choisi en round-robin.
+\end{itemize}
+
+\newpage \section{Etape 4 : Opérations avancées}
+
+L'étape IV n'est pas encore commencée. Elle regroupe les fonctionnalités les
+plus avancées du sujet, à traiter seulement après la mise en place correcte de
+l'étape III.
+
+\subsection{Fonctionnalités attendues}
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{ls} pour lister le contenu du répertoire du serveur ;
+    \item \texttt{rm} et \texttt{put} pour modifier les fichiers ;
+    \item un mécanisme d'authentification pour protéger les opérations sensibles.
+\end{itemize}
+
+\subsection{Suite logique}
+
+La suite du travail consiste donc à terminer d'abord l'interconnexion maître /
+esclaves, puis à ajouter les commandes avancées et l'authentification demandées
+par la dernière étape du sujet.
 
 \end{document}

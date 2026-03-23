@@ -85,13 +85,13 @@ static void worker_loop(int listenfd)
     }
 }
 
-int ftp_server_run(void)
+int ftp_server_run(int port)
 {
     int i;
 
     ftp_enter_working_directory("serverFTP", FTP_SERVER_DATA_DIR);
-    g_listenfd = Open_listenfd(FTP_PORT);
-    printf("serverFTP listening on port %d with %d workers\n", FTP_PORT, NB_PROC);
+    g_listenfd = Open_listenfd(port);
+    printf("serverFTP listening on port %d with %d workers\n", port, NB_PROC);
 
     for (i = 0; i < NB_PROC; i++) {
         pid_t pid = Fork();
@@ -117,7 +117,28 @@ int ftp_server_run(void)
     return 0;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    return ftp_server_run();
+    int slave_id;
+    int port;
+
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <slave_id>\n", argv[0]);
+        return 1;
+    }
+
+
+    slave_id = atoi(argv[1]);
+    if (slave_id < 1 || slave_id > NB_SLAVES) {
+        fprintf(stderr, "Invalid slave_id. Must be between 1 and %d.\n", NB_SLAVES);
+        return 1;
+    }
+
+    if (FTP_SLAVE_CLIENT_BASE_PORT + slave_id == 2121) {
+        fprintf(stderr, "Error: Slave client port cannot be 2121 (conflicts with master server port).\n");
+        return 1;
+    }
+
+    port = FTP_SLAVE_CLIENT_PORT(slave_id);
+    return ftp_server_run(port);
 }

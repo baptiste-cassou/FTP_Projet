@@ -70,9 +70,9 @@ int ftp_client_run(const char *host)
     double kbytes_per_second;
 
     ftp_enter_working_directory("clientFTP", FTP_CLIENT_DATA_DIR);
-    clientfd = Open_clientfd((char *)host, FTP_PORT);
+    clientfd = Open_clientfd((char *)host, FTP_MASTER_PORT);
     if (clientfd < 0) {
-        fprintf(stderr, "unable to connect to %s:%d\n", host, FTP_PORT);
+        fprintf(stderr, "unable to connect to %s:%d\n", host, FTP_MASTER_PORT);
         return 1;
     }
 

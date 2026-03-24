@@ -2,7 +2,7 @@
 #ifndef SERVERFTP_H
 #define SERVERFTP_H
 
-// Initialise le serveur, lance les workers et attend l'arret par signal
-int ftp_server_run(int port);
+// Initialise un serveur esclave, attend le maitre, puis lance les workers FTP.
+int ftp_server_run(int slave_id);
 
 #endif

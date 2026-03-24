@@ -62,7 +62,7 @@ static int parse_command(const char *line, parsed_command_t *cmd)
     return 0;
 }
 
-int ftp_client_run(const char *host)
+int ftp_client_run(const char *host, int port)
 {
     int clientfd;
     char line[MAXLINE];
@@ -70,13 +70,13 @@ int ftp_client_run(const char *host)
     double kbytes_per_second;
 
     ftp_enter_working_directory("clientFTP", FTP_CLIENT_DATA_DIR);
-    clientfd = Open_clientfd((char *)host, FTP_MASTER_PORT);
+    clientfd = Open_clientfd((char *)host, port);
     if (clientfd < 0) {
-        fprintf(stderr, "unable to connect to %s:%d\n", host, FTP_MASTER_PORT);
+        fprintf(stderr, "unable to connect to %s:%d\n", host, port);
         return 1;
     }
 
-    printf("Connected to %s.\n", host);
+    printf("Connected to %s:%d.\n", host, port);
     while (1) {
         printf("FTP >>> ");
         fflush(stdout);
@@ -115,10 +115,19 @@ int ftp_client_run(const char *host)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <host>\n", argv[0]);
+    int port = FTP_MASTER_PORT;
+
+    if (argc != 2 && argc != 3) {
+        fprintf(stderr, "usage: %s <host> [port]\n", argv[0]);
         return 1;
     }
+    if (argc == 3) {
+        port = atoi(argv[2]);
+        if (port <= 0) {
+            fprintf(stderr, "clientFTP: invalid port '%s'\n", argv[2]);
+            return 1;
+        }
+    }
 
-    ftp_client_run(argv[1]);
+    return ftp_client_run(argv[1], port);
 }

@@ -6,20 +6,21 @@
  
 // Gerer les esclaves
 #define NB_SLAVES 2
-#define FTP_SLAVE_CLIENT_BASE_PORT 3001 // Port de base = le client 3001 va controler 4001 (slave 1)
-#define FTP_SLAVE_CTRL_BASE_PORT 4001   // le client 3002 va controler 4002 (slave 2) etc)
+#define FTP_SLAVE_CLIENT_BASE_PORT 3001
+#define FTP_SLAVE_CTRL_BASE_PORT 4001
 
 // Helpers pour les ports des esclaves
 #define FTP_SLAVE_CLIENT_PORT(id) (FTP_SLAVE_CLIENT_BASE_PORT + (id) - 1)
 #define FTP_SLAVE_CTRL_PORT(id)   (FTP_SLAVE_CTRL_BASE_PORT + (id) - 1)
 
 // Parametres globaux du serveur et du protocole.
-#define FTP_MASTER_PORT 2121           // A modifier pour inclure les nouveaux ports et le serverMASTER etc
+#define FTP_MASTER_PORT 2121
 #define FTP_PROTO_VERSION 1
 #define FTP_BLOCK_SIZE 4096
 #define NB_PROC 1
 #define FTP_SERVER_DATA_DIR "data_server"
 #define FTP_CLIENT_DATA_DIR "data_client"
+#define FTP_MAX_HOST 64
 
 // Tailles maximales des champs texte transportes sur le reseau.
 #define FTP_MAX_FILENAME 256
@@ -68,6 +69,15 @@ typedef struct {
     uint64_t offset;    // offset accepte par le serveur
     uint32_t payload_size;
 } response_t;
+
+// Message de controle envoye par un esclave au maitre a la connexion Q12.
+typedef struct {
+    uint32_t version;
+    uint32_t slave_id;
+    uint32_t client_port;
+    uint32_t ctrl_port;
+    char host[FTP_MAX_HOST];
+} slave_hello_t;
 
 
 

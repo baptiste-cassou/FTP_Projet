@@ -294,7 +294,8 @@ Q8 & réalisée & Le fichier est correctement découpé et envoyé au client. \\
 Q9 & réalisée & Le client peut dorenevant faire plusieurs téléchargements. \\
 Q10 & réalisée & Récupération d'un fichier tronqué et complétion du transfert. \\
 Q11 & réalisée & Définition d'un nombre statique d'esclaves et réservation de ports dédiés pour le maître et les esclaves. \\
-Q12 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées : interconnexion maître/esclaves, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
+Q12 & réalisée & Interconnexion maître / esclaves au démarrage, transmission des informations d'identité de chaque esclave et enregistrement côté maître. \\
+Q13 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées : redirection client en round-robin, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -304,8 +305,8 @@ Q12 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implém
 
 \begin{itemize}[leftmargin=*]
     \item les étapes I et II sont réalisées jusqu'à Q10 ;
-    \item la question 11 prépare l'architecture maître / esclaves ;
-    \item les questions Q12 à Q17 restent à implémenter.
+    \item les questions 11 et 12 mettent en place l'architecture maître / esclaves ;
+    \item les questions Q13 à Q17 restent à implémenter.
 \end{itemize}
 \end{infobox}
 
@@ -780,10 +781,10 @@ d'ordre des octets adaptées.
 
 \newpage \section{Etape 3 : Répartition de charge entre serveurs FTP}
 
-L'étape III introduit une architecture maître / esclaves. À ce stade, seule la
-question 11 est réalisée dans le code : le projet distingue le port du maître,
-fixe un nombre statique d'esclaves et réserve des plages de ports dédiées aux
-serveurs esclaves.
+L'étape III introduit une architecture maître / esclaves. À ce stade, les
+questions 11 et 12 sont réalisées dans le code : le projet distingue le port du
+maître, fixe un nombre statique d'esclaves, réserve des plages de ports dédiées
+et établit l'interconnexion maître / esclaves au démarrage.
 
 \subsection{Question 11 réalisée}
 
@@ -803,14 +804,38 @@ Concrètement, avec \texttt{NB\_SLAVES = 2}, on obtient :
     \item esclave 2 : port client \texttt{3002}, port de contrôle \texttt{4002}.
 \end{itemize}
 
-\subsection{Questions restantes}
+\subsection{Question 12 réalisée}
 
-Les questions Q12 à Q14 ne sont pas encore réalisées. Il reste notamment à :
+La question 12 consiste à faire en sorte que le maître récupère les informations
+de chaque esclave et les conserve en mémoire. L'implémentation retenue repose
+sur un petit canal de contrôle distinct du port client.
 
 \begin{itemize}[leftmargin=*]
-    \item établir les connexions maître / esclaves au démarrage ;
-    \item stocker les informations utiles sur chaque esclave ;
+    \item chaque esclave ouvre d'abord son port de contrôle \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} ;
+    \item le maître se connecte successivement à chaque esclave sur ce port ;
+    \item l'esclave envoie une structure \texttt{slave\_hello\_t} contenant sa version de protocole, son identifiant, son port client, son port de contrôle et son nom d'hôte ;
+    \item le maître lit cette structure, vérifie les champs reçus, puis stocke ces informations dans un tableau local de structures représentant les esclaves enregistrés ;
+    \item le maître n'ouvre son port client \texttt{2121} qu'après l'enregistrement complet des \texttt{NB\_SLAVES} esclaves.
+\end{itemize}
+
+Ce choix est cohérent avec le sujet : les informations sont bien transmises au
+maître au démarrage, elles sont mémorisées côté maître, et l'initialisation du
+système garantit qu'un client ne contacte pas un maître incomplet.
+
+\begin{sciencebox}
+La Q12 ne réalise pas encore la répartition de charge elle-même. Le maître sait
+désormais \emph{qui} sont ses esclaves et \emph{sur quels ports} ils écoutent,
+mais la sélection d'un esclave et la redirection effective du client relèvent de
+la question suivante.
+\end{sciencebox}
+
+\subsection{Questions restantes}
+
+Les questions Q13 à Q14 ne sont pas encore réalisées. Il reste notamment à :
+
+\begin{itemize}[leftmargin=*]
     \item rediriger ensuite le client vers l'esclave choisi en round-robin.
+    \item faire prendre au maître une vraie décision de répartition à chaque nouvelle connexion.
 \end{itemize}
 
 \newpage \section{Etape 4 : Opérations avancées}

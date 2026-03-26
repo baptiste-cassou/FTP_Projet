@@ -6,7 +6,6 @@
 typedef struct {
     int ctrl_fd;
     int connected;
-    int nb_client;
     slave_hello_t hello;
 } registered_slave_t;
 
@@ -66,7 +65,6 @@ static int register_one_slave(int slave_id, registered_slave_t *slave)
 
     memset(slave, 0, sizeof(*slave));
     slave->ctrl_fd = -1;
-    slave->nb_client = 0;
     ctrl_fd = Open_clientfd("127.0.0.1", FTP_SLAVE_CTRL_PORT(slave_id));
     if (ctrl_fd < 0) {
         fprintf(stderr, "masterFTP: unable to connect to slave %d on control port %d\n",
@@ -121,18 +119,15 @@ static int register_all_slaves(void)
 static registered_slave_t *choose_next_slave(void)
 {
     int attempts;
-    registered_slave_t *best = NULL;
-    int mini = NB_PROC;
-    for (attempts = 0; attempts < NB_SLAVES; attempts++) { //parcours chaqu'un des slave
+    for (attempts = 0; attempts < NB_SLAVES; attempts++) { 
         int idx = (g_next_slave_index + attempts) % NB_SLAVES;
-
-        if (g_slaves[idx].connected && g_slaves[idx].ctrl_fd >= 0 && g_slaves[idx].nb_client < mini) { //cherche le slave qui a le moins de clients
+        if (g_slaves[idx].connected && g_slaves[idx].ctrl_fd >= 0) { //prend le prochain slave
             g_next_slave_index = (idx + 1) % NB_SLAVES;
-            best = &g_slaves[idx];
+            return &g_slaves[idx];
         }
     }
 
-    return best;
+    return NULL;
 }
 
 static void serve_client_placeholders(void)

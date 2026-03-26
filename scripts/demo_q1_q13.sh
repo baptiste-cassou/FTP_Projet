@@ -25,6 +25,7 @@ SLAVE2_LOG="$LOG_DIR/demo_slave2.log"
 MASTER_LOG="$LOG_DIR/demo_master.log"
 CLIENT_MULTI_LOG="$LOG_DIR/demo_client_q1_q9.log"
 CLIENT_RESUME_LOG="$LOG_DIR/demo_client_q10.log"
+CLIENT_Q13_LOG="$LOG_DIR/demo_client_q13.log"
 
 PIDS=()
 
@@ -68,18 +69,18 @@ wait_for_log() {
   return 1
 }
 
-echo "[1/8] Build project"
+echo "[1/9] Build project"
 mkdir -p "$LOG_DIR" "$ROOT_DIR/data_server" "$ROOT_DIR/data_client"
 make -C "$ROOT_DIR" clean >/dev/null
 make -C "$ROOT_DIR" all >/dev/null
 
-echo "[2/8] Prepare demonstration files"
+echo "[2/9] Prepare demonstration files"
 printf 'Demonstration FTP Q1-Q7\n' > "$SERVER_TEXT_PATH"
 dd if=/dev/urandom of="$SERVER_BIN_PATH" bs=1M count=1 status=none
 dd if=/dev/urandom of="$SERVER_RESUME_PATH" bs=1M count=2 status=none
 rm -f "$CLIENT_TEXT_PATH" "$CLIENT_BIN_PATH" "$CLIENT_RESUME_PATH"
 
-echo "[3/8] Start slave 1 and slave 2"
+echo "[3/9] Start slave 1 and slave 2"
 stdbuf -oL -eL "$ROOT_DIR/bin/serverFTP" "$SLAVE1_ID" >"$SLAVE1_LOG" 2>&1 &
 PIDS+=("$!")
 stdbuf -oL -eL "$ROOT_DIR/bin/serverFTP" "$SLAVE2_ID" >"$SLAVE2_LOG" 2>&1 &
@@ -88,7 +89,7 @@ PIDS+=("$!")
 wait_for_log "$SLAVE1_LOG" "waiting for master on control port"
 wait_for_log "$SLAVE2_LOG" "waiting for master on control port"
 
-echo "[4/8] Start master and validate Q11-Q12 registration"
+echo "[4/9] Start master and validate Q11-Q12 registration"
 stdbuf -oL -eL "$ROOT_DIR/bin/masterFTP" >"$MASTER_LOG" 2>&1 &
 PIDS+=("$!")
 
@@ -101,7 +102,7 @@ wait_for_log "$SLAVE2_LOG" "listening on client port 3002"
 echo "Q11/Q12 OK:"
 cat "$MASTER_LOG"
 
-echo "[5/8] Demonstrate Q1-Q9 using direct connection to slave 1"
+echo "[5/9] Demonstrate Q1-Q9 using direct connection to slave 1"
 echo "Note: direct slave connection is used here because client redirection belongs to Q13."
 printf "get %s\nget %s\nbye\n" "$TEXT_FILE" "$BIN_FILE" \
   | "$ROOT_DIR/bin/clientFTP" "$HOST" "$SLAVE1_PORT" >"$CLIENT_MULTI_LOG" 2>&1
@@ -113,7 +114,7 @@ test -f "$CLIENT_BIN_PATH"
 echo "Client session Q1-Q9:"
 cat "$CLIENT_MULTI_LOG"
 
-echo "[6/8] Demonstrate Q10 resume"
+echo "[6/9] Demonstrate Q10 resume"
 head -c 700000 "$SERVER_RESUME_PATH" > "$CLIENT_RESUME_PATH"
 printf "get %s\nbye\n" "$RESUME_FILE" \
   | "$ROOT_DIR/bin/clientFTP" "$HOST" "$SLAVE1_PORT" >"$CLIENT_RESUME_LOG" 2>&1
@@ -131,12 +132,25 @@ fi
 echo "Client session Q10:"
 cat "$CLIENT_RESUME_LOG"
 
-echo "[7/8] Summary"
+echo "[7/9] Demonstrate Q13 client redirection through master"
+rm -f "$CLIENT_TEXT_PATH"
+printf "get %s\nbye\n" "$TEXT_FILE" \
+  | "$ROOT_DIR/bin/clientFTP" "$HOST" >"$CLIENT_Q13_LOG" 2>&1
+
+grep -q "Redirection vers le slave" "$CLIENT_Q13_LOG"
+grep -q "redirected client" "$MASTER_LOG"
+test -f "$CLIENT_TEXT_PATH"
+
+echo "Client session Q13:"
+cat "$CLIENT_Q13_LOG"
+
+echo "[8/9] Summary"
 echo "- Q1-Q7: request/response structures, client/server skeleton, SIGINT cleanup, directories, GET"
 echo "- Q8: transfer by blocks demonstrated on binary files"
 echo "- Q9: multiple commands in a single client session"
 echo "- Q10: resume verified by matching SHA256 after partial local file"
 echo "- Q11: static slave count and dedicated ports"
 echo "- Q12: master registered 2 slaves before listening on 2121"
+echo "- Q13: client connected to master then redirected automatically to a slave"
 
-echo "[8/8] PASS"
+echo "[9/9] PASS"

@@ -822,20 +822,34 @@ Ce choix est cohérent avec le sujet : les informations sont bien transmises au
 maître au démarrage, elles sont mémorisées côté maître, et l'initialisation du
 système garantit qu'un client ne contacte pas un maître incomplet.
 
-\begin{sciencebox}
-La Q12 ne réalise pas encore la répartition de charge elle-même. Le maître sait
-désormais \emph{qui} sont ses esclaves et \emph{sur quels ports} ils écoutent,
-mais la sélection d'un esclave et la redirection effective du client relèvent de
-la question suivante.
-\end{sciencebox}
+\subsection{Question 13 réalisée}
+
+La question 13 demande au maître de faire un choix parmis les slaves enregistrés pour rediriger le client. 
+Nous avons choisi de faire une redirection simple qui consiste à répondre au client avec une réponse contenant le port client de l'esclave choisi en round-robin.
+Grâce à l'étape 12, le maître connaît déjà les ports clients de tous les esclaves, le master-server renvoie le clients choisis par la fonction \texttt{select\_slave}.
+
+\begin{itemize}[leftmargin=*]
+    \item la fonction \texttt{select\_slave} implémente une sélection round-robin parmi les esclaves enregistrés.
+    \item lorsque le maître reçoit une requête d'un client, il appelle \texttt{select\_slave} pour choisir un esclave.
+    \item le maître répond au client avec le port client de l'esclave choisi.
+    \item le client reçoit cette réponse, et se reconnecte directement à cet esclave pour poursuivre la session FTP.
+\end{itemize}
+
+%\begin{sciencebox}
+%La Q12 ne réalise pas encore la répartition de charge elle-même. Le maître sait
+%désormais \emph{qui} sont ses esclaves et \emph{sur quels ports} ils écoutent,
+%mais la sélection d'un esclave et la redirection effective du client relèvent de
+%la question suivante.
+%\end{sciencebox}
+
 
 \subsection{Questions restantes}
 
-Les questions Q13 à Q14 ne sont pas encore réalisées. Il reste notamment à :
+La question Q14 ne sont pas encore réalisées. Il reste notamment à :
 
 \begin{itemize}[leftmargin=*]
-    \item rediriger ensuite le client vers l'esclave choisi en round-robin.
-    \item faire prendre au maître une vraie décision de répartition à chaque nouvelle connexion.
+    \item faire prendre au maître une vraie décision de répartition à chaque nouvelle connexion. (idée: le master-server connait le nb de clients d'un slave, le slave doit indiquer au server les déconnexions clients)
+    \item implémenter une reconnexion au master automatique en cas de panne d'un esclave.
 \end{itemize}
 
 \newpage \section{Etape 4 : Opérations avancées}

@@ -71,7 +71,7 @@ static void handle_get_request(int connfd, const request_t *request)
         return;
     }
 
-    if (request->offset > 0 && request->offset <= (uint64_t)st.st_size) {
+    if (request->offset > 0 && request->offset <= (uint64_t)st.st_size) { // si un fichier à un offset trop grand => fichier modifié donc pas à jour on retélécharge du début
         if (lseek(fd, (off_t)request->offset, SEEK_SET) < 0) {
             ftp_send_response(connfd, FTP_STATUS_ERR_IO, request->type, (uint64_t)st.st_size, 0);
             Close(fd);

@@ -6,12 +6,14 @@
 typedef struct {
     int ctrl_fd;
     int connected;
+    int nb_client;
     slave_hello_t hello;
 } registered_slave_t;
 
 static volatile sig_atomic_t g_stop = 0;
 static int g_listenfd = -1;
 static registered_slave_t g_slaves[NB_SLAVES];
+static int g_next_slave_index = 0;
 
 static void safe_close_fd(int *fd)
 {
@@ -64,7 +66,7 @@ static int register_one_slave(int slave_id, registered_slave_t *slave)
 
     memset(slave, 0, sizeof(*slave));
     slave->ctrl_fd = -1;
-
+    slave->nb_client = 0;
     ctrl_fd = Open_clientfd("127.0.0.1", FTP_SLAVE_CTRL_PORT(slave_id));
     if (ctrl_fd < 0) {
         fprintf(stderr, "masterFTP: unable to connect to slave %d on control port %d\n",
@@ -116,6 +118,23 @@ static int register_all_slaves(void)
     return 0;
 }
 
+static registered_slave_t *choose_next_slave(void)
+{
+    int attempts;
+    registered_slave_t *best = NULL;
+    int mini = NB_PROC;
+    for (attempts = 0; attempts < NB_SLAVES; attempts++) { //parcours chaqu'un des slave
+        int idx = (g_next_slave_index + attempts) % NB_SLAVES;
+
+        if (g_slaves[idx].connected && g_slaves[idx].ctrl_fd >= 0 && g_slaves[idx].nb_client < mini) { //cherche le slave qui a le moins de clients
+            g_next_slave_index = (idx + 1) % NB_SLAVES;
+            best = &g_slaves[idx];
+        }
+    }
+
+    return best;
+}
+
 static void serve_client_placeholders(void)
 {
     struct sockaddr_in clientaddr;
@@ -133,8 +152,23 @@ static void serve_client_placeholders(void)
         }
 
         Inet_ntop(AF_INET, &clientaddr.sin_addr, client_ip_string, INET_ADDRSTRLEN);
-        printf("masterFTP: client connected from %s, Q13 redirection pending\n", client_ip_string);
-        Close(connfd);
+        
+        registered_slave_t *slave = choose_next_slave();
+
+        if (slave == NULL) {
+            fprintf(stderr, "masterFTP: aucun slave n'est prêt à accueillir la connexion %s\n", client_ip_string);
+            Close(connfd);
+            clientlen = (socklen_t)sizeof(clientaddr);
+            continue;
+        }
+
+        Rio_writen(connfd, &slave->hello, sizeof(slave->hello));
+        printf("masterFTP: redirected client %s to slave %u (%s:%u)\n",
+            client_ip_string,
+            slave->hello.slave_id,
+            slave->hello.host,
+            slave->hello.client_port);
+        Close(connfd); //fermeture de la connection entre le master et le client
         clientlen = (socklen_t)sizeof(clientaddr);
     }
 }
@@ -147,7 +181,6 @@ static int ftp_master_run(void)
         master_sigint_handler(SIGINT);
         return 1;
     }
-
     g_listenfd = Open_listenfd(FTP_MASTER_PORT);
     printf("masterFTP: listening on port %d with %d registered slaves\n",
            FTP_MASTER_PORT, NB_SLAVES);

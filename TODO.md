@@ -41,10 +41,10 @@
 
 ## Étape III : Répartition de charge
 
-- [ ] **Q11 - Définir `NB_SLAVES` et ports esclaves**  
+- [x] **Q11 - Définir `NB_SLAVES` et ports esclaves**  
   Choisir un nombre fixe d'esclaves et des ports dédiés, distincts de `2121`.
 
-- [ ] **Q12 - Interconnexion maître/esclaves**  
+- [x] **Q12 - Interconnexion maître/esclaves**  
   Faire établir au maître les connexions vers les esclaves au démarrage et stocker les informations nécessaires.
 
 - [ ] **Q13 - Adapter la connexion client**  

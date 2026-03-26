@@ -2,7 +2,7 @@
 #ifndef CLIENTFTP_H
 #define CLIENTFTP_H
 
-// Ouvre une connexion au serveur et execute une unique commande interactive.
-int ftp_client_run(const char *host);
+// Ouvre une connexion au serveur et execute une session FTP interactive.
+int ftp_client_run(const char *host, int port);
 
 #endif

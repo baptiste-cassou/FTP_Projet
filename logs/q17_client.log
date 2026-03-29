@@ -1,0 +1,7 @@
+clientFTP working directory: /c/Users/leyko/Downloads/projet/data_client
+Redirection vers le slave 2 (a1ka:3002)
+Connected to a1ka:3002.
+FTP >>> clientFTP: server returned AUTH_REQUIRED for PUT preflight
+FTP >>> clientFTP: server returned AUTH_FAILED for AUTH
+FTP >>> Authentication successful.
+FTP >>> Bye!

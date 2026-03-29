@@ -1,0 +1,10 @@
+serverFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_server
+serverFTP slave 1 waiting for master on control port 4001
+serverFTP slave 1 registered to master 127.0.0.1 with client port 3001
+serverFTP slave 1 listening on client port 3001 with 1 workers
+serverFTP worker 17272 connected to localhost (127.0.0.1)
+serverFTP: received request type 1
+ftp protocol response: write failed: Connection reset by peer
+serverFTP worker 17272 connected to localhost (127.0.0.1)
+serverFTP: received request type 1
+serverFTP: received request type 5

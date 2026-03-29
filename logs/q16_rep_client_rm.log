@@ -1,0 +1,6 @@
+clientFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_client
+Redirection vers le slave 2 (a1ka-LOQ-15IAX9:3002)
+Connected to a1ka-LOQ-15IAX9:3002.
+FTP >>> Authentication successful.
+FTP >>> File 'demo_q16_rep.txt' removed.
+FTP >>> Bye!

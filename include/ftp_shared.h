@@ -21,8 +21,12 @@
 #define FTP_SERVER_DATA_DIR "data_server"
 #define FTP_CLIENT_DATA_DIR "data_client"
 #define FTP_MAX_HOST 64
-#define FTP_MAX_TRY_RECONNECTION 1
+#define FTP_MAX_TRY_RECONNECTION 5
 #define FTP_TIME_BETWEEN_TRY 1
+// Parametres de tests pitié on ferait pas ça en vrai en entreprise je evous jure monsieur l'agent
+#define FTP_AUTH_LOGIN "admin"
+#define FTP_AUTH_PASSWORD "srftp"
+
 // Tailles maximales des champs texte transportes sur le reseau.
 #define FTP_MAX_FILENAME 256
 #define FTP_MAX_LOGIN 32
@@ -56,6 +60,7 @@ typedef struct {
     uint32_t version;
     uint32_t type;      // typereq_t
     uint64_t offset;    // reprise de transfert
+    uint64_t file_size; // taille du payload associe (PUT)
     uint32_t block_size;
     char filename[FTP_MAX_FILENAME];
     char login[FTP_MAX_LOGIN];
@@ -79,6 +84,32 @@ typedef struct {
     uint32_t ctrl_port;
     char host[FTP_MAX_HOST];
 } slave_hello_t;
+
+typedef struct {
+    uint32_t version;
+    uint32_t slave_count;
+    slave_hello_t slaves[NB_SLAVES];
+} slave_cluster_t;
+
+typedef enum {
+    FTP_REPL_INVALID = 0,
+    FTP_REPL_PUT = 1,
+    FTP_REPL_RM = 2
+} ftp_replication_type_t;
+
+typedef struct {
+    uint32_t version;
+    uint32_t type;            // ftp_replication_type_t
+    uint32_t source_slave_id;
+    uint32_t reserved;
+    uint64_t file_size;
+    char filename[FTP_MAX_FILENAME];
+} ftp_replication_request_t;
+
+typedef struct {
+    uint32_t version;
+    uint32_t status;          // ftp_status_t
+} ftp_control_reply_t;
 
 
 

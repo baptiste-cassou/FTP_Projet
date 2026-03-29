@@ -1,4 +1,5 @@
 #include "csapp.h"
+#include "ftp_protocol.h"
 #include "ftp_shared.h"
 
 #include <errno.h>
@@ -40,21 +41,23 @@ static void install_handler(void)
     Signal(SIGINT, master_sigint_handler);
 }
 
-static int receive_slave_hello(int ctrl_fd, slave_hello_t *hello)
+static int send_cluster_map_to_slave(registered_slave_t *slave)
 {
-    ssize_t n;
+    slave_cluster_t cluster;
+    int i;
 
-    n = Rio_readn(ctrl_fd, hello, sizeof(*hello));
-    if (n < 0) {
-        fprintf(stderr, "masterFTP: unable to read slave hello\n");
-        return -1;
-    }
-    if ((size_t)n != sizeof(*hello)) {
-        fprintf(stderr, "masterFTP: incomplete slave hello received: %zd bytes\n", n);
-        return -1;
+    memset(&cluster, 0, sizeof(cluster));
+    cluster.version = FTP_PROTO_VERSION;
+    cluster.slave_count = NB_SLAVES;
+    for (i = 0; i < NB_SLAVES; i++) {
+        cluster.slaves[i] = g_slaves[i].hello;
     }
 
-    hello->host[FTP_MAX_HOST - 1] = '\0';
+    if (ftp_send_cluster_map(slave->ctrl_fd, &cluster) < 0) {
+        fprintf(stderr, "masterFTP: unable to send cluster map to slave %u\n",
+                slave->hello.slave_id);
+        return -1;
+    }
     return 0;
 }
 
@@ -65,14 +68,14 @@ static int register_one_slave(int slave_id, registered_slave_t *slave)
 
     memset(slave, 0, sizeof(*slave));
     slave->ctrl_fd = -1;
-    ctrl_fd = Open_clientfd("127.0.0.1", FTP_SLAVE_CTRL_PORT(slave_id));
+    ctrl_fd = open_clientfd("127.0.0.1", FTP_SLAVE_CTRL_PORT(slave_id));
     if (ctrl_fd < 0) {
         fprintf(stderr, "masterFTP: unable to connect to slave %d on control port %d\n",
                 slave_id, FTP_SLAVE_CTRL_PORT(slave_id));
         return -1;
     }
 
-    if (receive_slave_hello(ctrl_fd, &hello) < 0) {
+    if (ftp_receive_slave_hello(ctrl_fd, &hello) < 0) {
         close(ctrl_fd);
         return -1;
     }
@@ -116,12 +119,29 @@ static int register_all_slaves(void)
     return 0;
 }
 
+static int send_cluster_map_to_all_slaves(void)
+{
+    int i;
+
+    for (i = 0; i < NB_SLAVES; i++) {
+        if (!g_slaves[i].connected || g_slaves[i].ctrl_fd < 0) {
+            return -1;
+        }
+        if (send_cluster_map_to_slave(&g_slaves[i]) < 0) {
+            return -1;
+        }
+        safe_close_fd(&g_slaves[i].ctrl_fd);
+    }
+
+    return 0;
+}
+
 static registered_slave_t *choose_next_slave(void)
 {
     int attempts;
     for (attempts = 0; attempts < NB_SLAVES; attempts++) { 
         int idx = (g_next_slave_index + attempts) % NB_SLAVES;
-        if (g_slaves[idx].connected && g_slaves[idx].ctrl_fd >= 0) { //prend le prochain slave
+        if (g_slaves[idx].connected) { //prend le prochain slave
             g_next_slave_index = (idx + 1) % NB_SLAVES;
             return &g_slaves[idx];
         }
@@ -157,7 +177,11 @@ static void serve_client_placeholders(void)
             continue;
         }
 
-        Rio_writen(connfd, &slave->hello, sizeof(slave->hello));
+        if (ftp_send_slave_hello(connfd, &slave->hello) < 0) {
+            Close(connfd);
+            clientlen = (socklen_t)sizeof(clientaddr);
+            continue;
+        }
         printf("masterFTP: redirected client %s to slave %u (%s:%u)\n",
             client_ip_string,
             slave->hello.slave_id,
@@ -173,6 +197,10 @@ static int ftp_master_run(void)
     install_handler();
 
     if (register_all_slaves() < 0) {
+        master_sigint_handler(SIGINT);
+        return 1;
+    }
+    if (send_cluster_map_to_all_slaves() < 0) {
         master_sigint_handler(SIGINT);
         return 1;
     }

@@ -1,0 +1,6 @@
+clientFTP working directory: /c/Users/leyko/Downloads/projet/data_client
+Redirection vers le slave 1 (a1ka:3001)
+Connected to a1ka:3001.
+FTP >>> Authentication successful.
+FTP >>> File 'qtest_upload.txt' removed.
+FTP >>> Bye!

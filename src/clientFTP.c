@@ -1,6 +1,7 @@
 #include "clientFTP.h"
 #include "client_requests.h"
 #include "csapp.h"
+#include "ftp_protocol.h"
 #include "ftp_runtime.h"
 #include "ftp_shared.h"
 
@@ -13,18 +14,11 @@ typedef struct {
 
 static int receive_slave_redirection(int masterfd, slave_hello_t *hello)
 {
-    ssize_t n = Rio_readn(masterfd, hello, sizeof(*hello));
-
-    if (n < 0) {
-        fprintf(stderr, "clientFTP: imposible de lire la requête de redirection: %s\n", strerror(errno));
-        return -1;
-    }
-    if ((size_t)n != sizeof(*hello)) {
-        fprintf(stderr, "clientFTP: requete de redirection incomplète: %zd bytes\n", n);
+    if (ftp_receive_slave_hello(masterfd, hello) < 0) {
+        fprintf(stderr, "clientFTP: impossible de lire la requête de redirection\n");
         return -1;
     }
 
-    hello->host[FTP_MAX_HOST - 1] = '\0';
     if (hello->version != FTP_PROTO_VERSION) {
         fprintf(stderr, "clientFTP: mauvaise version %u\n", hello->version);
         return -1;
@@ -39,7 +33,7 @@ static int receive_slave_redirection(int masterfd, slave_hello_t *hello)
 
 static int ftp_handle_redirection(const char *host, int port, char *r_host, int *r_port){
     slave_hello_t redirect;
-    int clientfd = Open_clientfd((char *)host, port); //connexion au maitre
+    int clientfd = open_clientfd((char *)host, port);
     if (clientfd < 0) {
         fprintf(stderr, "impossible de se connecter au maitre %s:%d\n", host, port);
         return -1;
@@ -118,9 +112,9 @@ static int ftp_client_connect(const char *host, int port, int *clientfd) {
             fprintf(stderr, "redirection impossible\n");
             return -1;
         }
-        *clientfd = Open_clientfd(target_host, target_port);
+        *clientfd = open_clientfd(target_host, target_port);
     } else {
-        *clientfd = Open_clientfd((char *)host, target_port); // on peut tjrs se connecter directement à un serveur si port != 2121
+        *clientfd = open_clientfd((char *)host, target_port); // on peut tjrs se connecter directement à un serveur si port != 2121
     }
 
     if (*clientfd < 0) {
@@ -136,24 +130,42 @@ static int ftp_client_connect(const char *host, int port, int *clientfd) {
     return 0;
 }
 
-static int ftp_client_reconnect(const char *host, int port, int *clientfd, parsed_command_t cmd, ftp_transfer_stats_t *stats){
-    int try = 0;
-    int success = 0;
-    while (try < FTP_MAX_TRY_RECONNECTION && !success) {
-        try++;
+static int ftp_client_reconnect(const char *host, int port, int *clientfd,
+                                parsed_command_t cmd, ftp_transfer_stats_t *stats)
+{
+    int attempt;
+    int result;
+
+    if (*clientfd >= 0) {
+        Close(*clientfd);
+        *clientfd = -1;
+    }
+
+    for (attempt = 0; attempt < FTP_MAX_TRY_RECONNECTION; attempt++) {
         if (ftp_client_connect(host, port, clientfd) < 0) {
-            sleep(FTP_TIME_BETWEEN_TRY);
+            if (attempt + 1 < FTP_MAX_TRY_RECONNECTION) {
+                sleep(FTP_TIME_BETWEEN_TRY);
+            }
             continue;
         }
 
-        if (ftp_client_get(*clientfd, cmd.filename, stats) < 0) {
-            Close(*clientfd);
-            sleep(FTP_TIME_BETWEEN_TRY);
-            continue;
+        result = ftp_client_get(*clientfd, cmd.filename, stats);
+        if (result == 0) {
+            return 0;
         }
-        success = 1;
+
+        if (result == -1) {
+            return -1;
+        }
+
+        Close(*clientfd);
+        *clientfd = -1;
+        if (attempt + 1 < FTP_MAX_TRY_RECONNECTION) {
+            sleep(FTP_TIME_BETWEEN_TRY);
+        }
     }
-    return success==0;
+
+    return -2;
 }
 
 
@@ -162,10 +174,8 @@ int ftp_client_run(const char *host, int port)
     int clientfd = -1;
     char line[MAXLINE];
     ftp_transfer_stats_t stats;
+    char *listing = NULL;
     double kbytes_per_second;
-    //char target_host[FTP_MAX_HOST]; //hostname après première connexion
-    //int target_port = port; //port après première connexion
-    uint8_t restart_cmd=0;
 
     ftp_enter_working_directory("clientFTP", FTP_CLIENT_DATA_DIR);
     if (ftp_client_connect(host, port, &clientfd) < 0) {
@@ -175,11 +185,9 @@ int ftp_client_run(const char *host, int port)
     while (1) {
         printf("FTP >>> ");
         fflush(stdout);
-        if (!restart_cmd) {
-            if (Fgets(line, sizeof(line), stdin) == NULL) {
-                Close(clientfd);
-                return 0;
-            }
+        if (Fgets(line, sizeof(line), stdin) == NULL) {
+            Close(clientfd);
+            return 0;
         }
         if (strcmp(line, "\n") == 0) continue;
 
@@ -197,17 +205,54 @@ int ftp_client_run(const char *host, int port)
                     continue;
                 case -2: //cas d'erreur serveur, tentative de reconnexion
                     fprintf(stderr, "Erreur serveur, tentative de reconnexion %s:%d\n", host, port);
-                    Close(clientfd);
-                    if (ftp_client_reconnect(host, port, &clientfd, cmd, &stats) == 1){
-                        fprintf(stderr, "clientFTP: le client à tenté de se reconnecter %d fois mais à échoué\n", FTP_MAX_TRY_RECONNECTION);
-                        return -1;
+                    switch (ftp_client_reconnect(host, port, &clientfd, cmd, &stats)) {
+                        case 0:
+                            break;
+                        case -1:
+                            continue;
+                        case -2:
+                            fprintf(stderr, "clientFTP: le client a tenté de se reconnecter %d fois mais a échoué\n",
+                                    FTP_MAX_TRY_RECONNECTION);
+                            return 1;
                     }
                     break;
             }
-            kbytes_per_second = (stats.bytes_received / 1024.0) / stats.seconds;
+            kbytes_per_second = (stats.bytes_transferred / 1024.0) / stats.seconds;
             printf("Transfer successfully complete.\n");
             printf("%" PRIu64 " bytes received in %.3f seconds (%.2f Kbytes/s).\n",
-                stats.bytes_received, stats.seconds, kbytes_per_second);
+                stats.bytes_transferred, stats.seconds, kbytes_per_second);
+        } else if (cmd.type == FTP_REQ_PUT) {
+            if (ftp_client_put(clientfd, cmd.filename, &stats) < 0) {
+                continue;
+            }
+            kbytes_per_second = (stats.bytes_transferred / 1024.0) / stats.seconds;
+            printf("Upload successfully complete.\n");
+            printf("%" PRIu64 " bytes sent in %.3f seconds (%.2f Kbytes/s).\n",
+                stats.bytes_transferred, stats.seconds, kbytes_per_second);
+        } else if (cmd.type == FTP_REQ_LS) {
+            if (ftp_client_ls(clientfd, &listing) < 0) {
+                continue;
+            }
+            if (listing[0] == '\0') {
+                printf("(empty directory)\n");
+            } else {
+                printf("%s", listing);
+                if (listing[strlen(listing) - 1] != '\n') {
+                    printf("\n");
+                }
+            }
+            Free(listing);
+            listing = NULL;
+        } else if (cmd.type == FTP_REQ_RM) {
+            if (ftp_client_rm(clientfd, cmd.filename) < 0) {
+                continue;
+            }
+            printf("File '%s' removed.\n", cmd.filename);
+        } else if (cmd.type == FTP_REQ_AUTH) {
+            if (ftp_client_auth(clientfd, cmd.login, cmd.password) < 0) {
+                continue;
+            }
+            printf("Authentication successful.\n");
         } else if (cmd.type == FTP_REQ_BYE) {
             ftp_client_bye(clientfd);
             printf("Bye!\n");

@@ -1,6 +1,8 @@
 /* $begin csapp.c */
 #include "csapp.h"
 
+/* Shared CS:APP helper library: the FTP project only uses a subset of these wrappers. */
+
 /************************** 
  * Error-handling functions
  **************************/
@@ -901,7 +903,6 @@ int Inet_pton(int af, const char *src, void *dst)
 }
 
 /* $end csapp.c */
-
 
 
 

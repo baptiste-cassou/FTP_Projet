@@ -1,0 +1,12 @@
+serverFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_server
+serverFTP slave 2 waiting for master on control port 4002
+serverFTP slave 2 registered to master 127.0.0.1 with client port 3002
+serverFTP slave 2 listening on client port 3002 with 1 workers
+serverFTP: applied replicated PUT 'demo_q16_upload.txt' from slave 1
+serverFTP worker 14363 connected to localhost (127.0.0.1)
+serverFTP: received request type 3
+serverFTP: received request type 6
+serverFTP: received request type 4
+serverFTP slave 2 replicated RM 'demo_q16_upload.txt' to slave 1
+serverFTP: received request type 3
+serverFTP: received request type 5

@@ -1,0 +1,5 @@
+clientFTP working directory: /c/Users/leyko/Downloads/projet/data_client
+Connected to 127.0.0.1:3001.
+FTP >>> Transfer successfully complete.
+21 bytes received in 0.006 seconds (3.54 Kbytes/s).
+FTP >>> Bye!

@@ -1,0 +1,16 @@
+serverFTP working directory: /c/Users/leyko/Downloads/projet/data_server
+serverFTP slave 2 waiting for master on control port 4002
+serverFTP slave 2 registered to master 127.0.0.1 with client port 3002
+serverFTP slave 2 listening on client port 3002 with 1 workers
+serverFTP worker 645 connected to a1ka (192.168.0.42)
+serverFTP: received request type 6
+serverFTP: received request type 2
+serverFTP slave 2 replicated PUT 'qtest_upload.txt' to slave 1
+serverFTP: received request type 5
+serverFTP: applied replicated RM 'qtest_upload.txt' from slave 1
+serverFTP worker 645 connected to a1ka (192.168.0.42)
+serverFTP: received request type 2
+serverFTP: received request type 6
+serverFTP: received request type 6
+serverFTP: received request type 5
+serverFTP: unable to accept replication connection: Invalid argument

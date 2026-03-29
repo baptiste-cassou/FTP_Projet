@@ -1,0 +1,26 @@
+clientFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_client
+Redirection vers le slave 1 (a1ka-LOQ-15IAX9:3001)
+Connected to a1ka-LOQ-15IAX9:3001.
+FTP >>> test2
+list_seed.txt
+TD.exe
+test1
+Transfert_q6
+FTP >>> clientFTP: server returned AUTH_REQUIRED for PUT preflight
+FTP >>> clientFTP: server returned AUTH_FAILED for AUTH
+FTP >>> Authentication successful.
+FTP >>> Upload successfully complete.
+14 bytes sent in 0.000 seconds (40.69 Kbytes/s).
+FTP >>> test2
+list_seed.txt
+TD.exe
+test1
+upload_test.txt
+Transfert_q6
+FTP >>> File 'upload_test.txt' removed.
+FTP >>> test2
+list_seed.txt
+TD.exe
+test1
+Transfert_q6
+FTP >>> Bye!

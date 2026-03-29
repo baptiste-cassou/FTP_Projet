@@ -1,4 +1,5 @@
 #include "csapp.h"
+#include "ftp_protocol.h"
 #include "ftp_runtime.h"
 #include "ftp_shared.h"
 #include "serverFTP.h"
@@ -13,6 +14,7 @@ static int g_connfd = -1;
 static int g_ctrl_listenfd = -1;
 static int g_ctrl_connfd = -1;
 static pid_t child_pids[NB_PROC];
+static ftp_server_context_t g_server_context;
 
 static void safe_close_fd(int *fdp)
 {
@@ -65,7 +67,14 @@ static int register_slave_to_master(int slave_id, int client_port)
     }
 
     Inet_ntop(AF_INET, &masteraddr.sin_addr, master_ip_string, INET_ADDRSTRLEN);
-    Rio_writen(g_ctrl_connfd, &hello, sizeof(hello));
+    if (ftp_send_slave_hello(g_ctrl_connfd, &hello) < 0) {
+        return -1;
+    }
+    if (ftp_receive_cluster_map(g_ctrl_connfd, &g_server_context.cluster) < 0) {
+        fprintf(stderr, "serverFTP: unable to receive cluster map from master\n");
+        return -1;
+    }
+    g_server_context.slave_id = slave_id;
     printf("serverFTP slave %d registered to master %s with client port %d\n",
            slave_id, master_ip_string, client_port);
 
@@ -132,11 +141,32 @@ static void worker_loop(int listenfd)
         printf("serverFTP worker %d connected to %s (%s)\n", getpid(), client_hostname, client_ip_string);
 
         g_connfd = connfd;
-        ftp_handle_client(connfd);
+        ftp_handle_client(connfd, &g_server_context);
         if (g_connfd >= 0) {
             Close(g_connfd);  
             g_connfd = -1;
         }
+    }
+}
+
+static void control_loop(void)
+{
+    while (!parent_stop) {
+        struct sockaddr_in peeraddr;
+        socklen_t peerlen = (socklen_t)sizeof(peeraddr);
+        int connfd = accept(g_ctrl_listenfd, (SA *)&peeraddr, &peerlen);
+
+        if (connfd < 0) {
+            if (errno == EINTR || errno == EBADF) {
+                continue;
+            }
+            fprintf(stderr, "serverFTP: unable to accept replication connection: %s\n",
+                    strerror(errno));
+            continue;
+        }
+
+        ftp_handle_replication_connection(connfd);
+        Close(connfd);
     }
 }
 
@@ -156,6 +186,7 @@ int ftp_server_run(int slave_id)
         safe_close_listenfd();
         return 1;
     }
+    safe_close_fd(&g_ctrl_connfd);
 
     printf("serverFTP slave %d listening on client port %d with %d workers\n",
            slave_id, client_port, NB_PROC);
@@ -171,9 +202,7 @@ int ftp_server_run(int slave_id)
         child_pids[i] = pid;
     }
 
-    while (!parent_stop) {
-        pause();
-    }
+    control_loop();
 
     for (i = 0; i < NB_PROC; i++) {
         if (child_pids[i] > 0) {

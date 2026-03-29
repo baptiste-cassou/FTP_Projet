@@ -1,0 +1,4 @@
+clientFTP working directory: /c/Users/leyko/Downloads/projet/data_client
+Connected to 127.0.0.1:3001.
+FTP >>> clientFTP: server returned NOT_FOUND for 'qtest_missing.txt'
+FTP >>> Bye!

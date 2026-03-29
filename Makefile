@@ -42,7 +42,7 @@ CLIENT_BIN := $(BIN_DIR)/clientFTP
 HOST ?= 127.0.0.1
 SLAVE_ID ?= 1
 
-.PHONY: all clean run-server run-master run-client run-all demo-q1-q12
+.PHONY: all clean run-server run-master run-client run-all demo-q1-q12 demo-q1-q17
 
 all: $(SERVER_BIN) $(MASTER_BIN) $(CLIENT_BIN)
 
@@ -70,10 +70,13 @@ run-master: $(MASTER_BIN)
 run-client: $(CLIENT_BIN)
 	./$(CLIENT_BIN) $(HOST)
 
-demo-q1-q12: all
+demo-q1-q12:
 	bash scripts/demo_q1_q12.sh
 
-run-all: demo-q1-q12
+demo-q1-q17:
+	bash scripts/demo_q1_q17.sh
+
+run-all: demo-q1-q17
 
 clean:
 	rm -f $(BIN_DIR)/*.o $(SERVER_BIN) $(MASTER_BIN) $(CLIENT_BIN) *.log *.toc *.aux *.out

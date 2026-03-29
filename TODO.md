@@ -55,17 +55,17 @@
 
 ## Étape IV : Opérations avancées
 
-- [ ] **Q15 - Commande `ls`**  
+- [x] **Q15 - Commande `ls`**  
   Retourner le contenu du répertoire courant du serveur (via `fork`/`exec`/`dup2` ou `popen`).
 
-- [ ] **Q16 - Commandes `rm` et `put`**  
+- [x] **Q16 - Commandes `rm` et `put`**  
   Permettre suppression et téléversement, puis répercuter les changements vers les autres esclaves (cohérence éventuelle).
 
-- [ ] **Q17 - Authentification**  
+- [x] **Q17 - Authentification**  
   Mettre en place login/mot de passe et refuser `put`/`rm` sans authentification préalable.
 
 ## Vérification et rendu
 
-- [ ] Vérifier chaque étape avec des tests reproductibles (succès, erreurs, fichiers binaires, pannes/reprise).
-- [ ] Finaliser le compte-rendu (architecture, protocole, tests, limites).
-- [ ] Préparer une démonstration propre (`make all`, lancement serveur/client, scénario de test).
+- [x] Vérifier chaque étape avec des tests reproductibles (succès, erreurs, fichiers binaires, pannes/reprise).
+- [x] Finaliser le compte-rendu (architecture, protocole, tests, limites).
+- [x] Préparer une démonstration propre (`make all`, lancement serveur/client, scénario de test).

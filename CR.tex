@@ -17,24 +17,18 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
-\usepackage{multicol}
 \usepackage{tikz}
-\usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{listings}
 
 % ============================================================
-% Couleurs violet/lavande
+% Couleurs
 % ============================================================
 \definecolor{mainpurple}{RGB}{106, 90, 205}
 \definecolor{lightlavender}{RGB}{230, 230, 250}
 \definecolor{deeppurple}{RGB}{75, 0, 130}
 \definecolor{softpurple}{RGB}{147, 112, 219}
 \definecolor{palelavender}{RGB}{245, 240, 255}
-
-% Couleurs code
-\definecolor{codegreen}{RGB}{0, 200, 100}
 \definecolor{codestring}{RGB}{206, 145, 120}
 
 % ============================================================
@@ -78,7 +72,7 @@
   {\thesubsubsection}{1em}{}
 
 % ============================================================
-% Boîtes tcolorbox
+% Boîtes
 % ============================================================
 \newtcolorbox{infobox}{
     colback=lightlavender,
@@ -94,7 +88,7 @@
     boxrule=1pt,
     arc=3mm,
     left=10pt, right=10pt, top=10pt, bottom=10pt,
-    title={\textbf{$\triangleright$ Idée}}
+    title={\textbf{Idée}}
 }
 
 \newtcolorbox{warningbox}{
@@ -103,25 +97,7 @@
     boxrule=1.5pt,
     arc=3mm,
     left=10pt, right=10pt, top=10pt, bottom=10pt,
-    title={\textbf{$\blacktriangledown$ Attention}}
-}
-
-\newtcolorbox{examplebox}{
-    colback=palelavender,
-    colframe=mainpurple,
-    boxrule=1pt,
-    arc=2mm,
-    left=8pt, right=8pt, top=8pt, bottom=8pt,
-    title={\textbf{$\star$ Exemple concret}}
-}
-
-\newtcolorbox{sciencebox}{
-    colback=lightlavender!70,
-    colframe=deeppurple,
-    boxrule=1pt,
-    arc=3mm,
-    left=10pt, right=10pt, top=10pt, bottom=10pt,
-    title={\textbf{$\boldsymbol{\Sigma}$ Éclairage technique}}
+    title={\textbf{Attention}}
 }
 
 % ============================================================
@@ -144,16 +120,6 @@
     xleftmargin=8pt,
     xrightmargin=4pt,
     tabsize=4
-}
-
-\lstdefinestyle{bash}{
-    style=codestyle,
-    language=bash
-}
-
-\lstdefinestyle{cstyle}{
-    style=codestyle,
-    language=C
 }
 
 \lstset{style=codestyle}
@@ -214,11 +180,9 @@
         boxrule=2pt
     ]
     \centering
-    {\Large\color{deeppurple} TP : Transfert de fichiers (FTP)\par}
+    {\Large\color{deeppurple} Compte rendu du projet de transfert de fichiers\par}
     \vspace{0.35cm}
-    {\large Service de transfert de fichiers inspiré du protocole FTP\par}
-    \vspace{0.2cm}
-    {\normalsize Client interactif, serveur concurrent, protocole applicatif minimal, transferts binaires et base pour les extensions futures\par}
+    {\large Nous décrivons ici le code réel du dépôt, son protocole réseau, son architecture maître / esclaves et les fonctionnalités Q1 à Q17\par}
     \end{tcolorbox}
 
     \vspace{1.1cm}
@@ -255,102 +219,118 @@
 
 \section{Introduction}
 
-Le projet consiste à construire un serveur de fichiers inspiré d'un FTP minimal.
-Le but pédagogique n'est pas de reproduire toute la RFC FTP historique, mais de
-mettre en place un protocole client/serveur cohérent, lisible et suffisamment
-propre pour servir de base aux questions suivantes du sujet.
+Nous avons réalisé un petit service de transfert de fichiers inspiré de FTP.
+Nous ne cherchons pas à reproduire tout le protocole FTP historique. Nous avons
+créé un protocole plus petit, plus simple, et adapté au sujet.
 
-\begin{infobox}
-Le dépôt courant couvre désormais les questions \textbf{Q1 à Q10}, puis prépare
-la \textbf{Q11}. Les étapes I et II du sujet sont donc réalisées, tandis que
-l'étape III commence avec la mise en place de l'architecture maître / esclaves.
-\end{infobox}
-
-L'objectif de ce compte-rendu est double :
+Dans ce projet, nous voulions surtout comprendre quatre idées :
 
 \begin{itemize}[leftmargin=*]
-    \item expliquer l'architecture du projet ;
-    \item expliquer pourquoi le code fonctionne, en particulier du point de vue réseau.
+    \item comment un client et un serveur parlent sur TCP ;
+    \item comment on définit un protocole applicatif avec des messages fixes ;
+    \item comment on transfère un fichier sans accès direct au disque distant ;
+    \item comment on ajoute peu à peu des fonctions plus avancées.
 \end{itemize}
 
-\newpage \subsection{Bilan global}
+La version actuelle du dépôt couvre les questions \textbf{Q1 à Q17}. Nous avons
+donc :
 
-\subsubsection{Bilan question par question}
+\begin{itemize}[leftmargin=*]
+    \item un client interactif ;
+    \item un maître sur le port \texttt{2121} ;
+    \item deux serveurs esclaves ;
+    \item les commandes \texttt{get}, \texttt{put}, \texttt{ls}, \texttt{rm},
+    \texttt{auth} et \texttt{bye} ;
+    \item la reprise d'un \texttt{get} interrompu ;
+    \item la reconnexion du client en cas de panne pendant un \texttt{get} ;
+    \item la réplication simple de \texttt{put} et \texttt{rm} entre esclaves ;
+    \item une sérialisation explicite des messages réseau avec prise en compte
+    de l'endianness.
+\end{itemize}
+
+\begin{infobox}
+Ce compte rendu a été réécrit à partir du code actuel. Nous décrivons donc le
+fonctionnement réel du dépôt, et pas seulement l'intention du projet.
+\end{infobox}
+\newpage
+\section{Vue d'ensemble}
+
+\subsection{Idée générale}
+
+Le système contient trois programmes :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{clientFTP} : le programme lancé par l'utilisateur ;
+    \item \texttt{masterFTP} : le maître, qui reçoit les clients sur
+    \texttt{2121} puis les redirige ;
+    \item \texttt{serverFTP} : un esclave, qui traite réellement les commandes
+    FTP.
+\end{itemize}
+
+Le maître ne transfère pas de fichiers. Il sert seulement à choisir un esclave.
+Le vrai travail se fait sur un esclave.
+
+\subsection{Bilan question par question}
 
 \begin{center}
 \small
-\begin{tabularx}{\textwidth}{@{}L{0.10\textwidth}L{0.15\textwidth}L{0.67\textwidth}@{}}
+\begin{tabularx}{\textwidth}{@{}L{0.09\textwidth}L{0.16\textwidth}L{0.67\textwidth}@{}}
 \toprule
-\textbf{Question} & \textbf{État} & \textbf{Observation} \\
+\textbf{Question} & \textbf{État} & \textbf{Ce que nous avons fait} \\
 \midrule
-Q1 & Réalisée & Définition du type énuméré \texttt{typereq\_t} pour encoder les commandes du protocole. \\
-Q2 & Réalisée & Définition de la structure \texttt{request\_t} pour transporter une requête client. \\
-Q3 & Réalisée & Mise en place du squelette \texttt{clientFTP}/\texttt{serverFTP}, du port \texttt{2121} et du pool de processus. \\
-Q4 & Réalisée & Gestion propre de \texttt{SIGINT} avec propagation aux workers et attente de terminaison. \\
-Q5 & Réalisée & Séparation explicite entre \texttt{data\_server/} et \texttt{data\_client/}. \\
-Q6 & Réalisée & Réception d'une requête, validation, génération d'une réponse, traitement de \texttt{GET}, transfert binaire. \\
-Q7 & Réalisée & Invite interactive \texttt{ftp> get fichier}, récupération du fichier, message final et statistiques. \\
-Q8 & réalisée & Le fichier est correctement découpé et envoyé au client. \\
-Q9 & réalisée & Le client peut dorenevant faire plusieurs téléchargements. \\
-Q10 & réalisée & Récupération d'un fichier tronqué et complétion du transfert. \\
-Q11 & réalisée & Définition d'un nombre statique d'esclaves et réservation de ports dédiés pour le maître et les esclaves. \\
-Q12 & réalisée & Interconnexion maître / esclaves au démarrage, transmission des informations d'identité de chaque esclave et enregistrement côté maître. \\
-Q13 à Q17 & Non réalisées & Les extensions futures ne sont pas encore implémentées : redirection client en round-robin, \texttt{ls}, \texttt{put}, \texttt{rm}, authentification. \\
+Q1 & Réalisée & Nous avons défini le type \texttt{typereq\_t} pour les commandes du protocole. \\
+Q2 & Réalisée & Nous avons défini la structure \texttt{request\_t} pour les messages client vers serveur. \\
+Q3 & Réalisée & Nous avons créé les binaires client et serveur, ainsi que l'écoute réseau. \\
+Q4 & Réalisée & Nous avons géré l'arrêt propre avec \texttt{SIGINT}. \\
+Q5 & Réalisée & Nous avons séparé le répertoire client et le répertoire serveur. \\
+Q6 & Réalisée & Nous avons reçu une requête, validé la demande et envoyé une réponse. \\
+Q7 & Réalisée & Nous avons ajouté la commande interactive \texttt{get} côté client avec statistiques. \\
+Q8 & Réalisée & Nous avons envoyé les fichiers par blocs de taille fixe. \\
+Q9 & Réalisée & Nous avons gardé une session ouverte pour plusieurs commandes successives. \\
+Q10 & Réalisée & Nous avons ajouté la reprise d'un téléchargement et la robustesse après coupure brutale. \\
+Q11 & Réalisée & Nous avons fixé un nombre d'esclaves et des ports dédiés. \\
+Q12 & Réalisée & Nous avons relié le maître et les esclaves au démarrage. \\
+Q13 & Réalisée & Nous avons redirigé le client du maître vers un esclave. \\
+Q14 & Réalisée & Nous avons reconnecté automatiquement le client pendant un \texttt{get}. \\
+Q15 & Réalisée & Nous avons ajouté la commande \texttt{ls}. \\
+Q16 & Réalisée & Nous avons ajouté \texttt{put} et \texttt{rm}, avec réplication simple. \\
+Q17 & Réalisée & Nous avons protégé \texttt{put} et \texttt{rm} avec \texttt{auth}. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\begin{infobox}
-\textbf{État synthétique du dépôt.}
+\subsection{Ce que le code fait aujourd'hui}
 
-\begin{itemize}[leftmargin=*]
-    \item les étapes I et II sont réalisées jusqu'à Q10 ;
-    \item les questions 11 et 12 mettent en place l'architecture maître / esclaves ;
-    \item les questions Q13 à Q17 restent à implémenter.
-\end{itemize}
-\end{infobox}
+La boucle normale est la suivante :
 
-\newpage \section{Architecture}
+\begin{enumerate}[leftmargin=*]
+    \item nous démarrons les esclaves ;
+    \item nous démarrons le maître ;
+    \item le maître enregistre les esclaves ;
+    \item le client se connecte au maître ;
+    \item le maître envoie l'adresse d'un esclave ;
+    \item le client ouvre une vraie session FTP avec cet esclave ;
+    \item le client envoie plusieurs commandes jusqu'à \texttt{bye}.
+\end{enumerate}
+\newpage
+\section{Organisation du dépôt}
 
-\subsection{Principe d'organisation}
-
-Le projet est structuré en couches courtes et spécialisées. Cette séparation est
-importante : elle évite de concentrer toute la logique réseau, toute la logique
-métier et toute la logique d'IHM dans un seul fichier.
-
-\begin{tipbox}
-Une bonne architecture ici consiste à faire en sorte que :
-
-\begin{itemize}[leftmargin=*]
-    \item le \texttt{main()} du client s'occupe surtout de l'interaction utilisateur ;
-    \item le \texttt{main()} du serveur s'occupe surtout de l'écoute et des workers ;
-    \item les fichiers \texttt{client\_requests.c} et \texttt{server\_requests.c}
-    portent la logique métier ;
-    \item la sérialisation et les structures communes restent dans la couche protocole.
-\end{itemize}
-\end{tipbox}
-
-\subsection{Couches principales}
+\subsection{Binaires principaux}
 
 \begin{center}
 \small
-\begin{tabularx}{\textwidth}{@{}L{0.23\textwidth}L{0.29\textwidth}L{0.40\textwidth}@{}}
+\begin{tabularx}{\textwidth}{@{}L{0.20\textwidth}L{0.20\textwidth}L{0.52\textwidth}@{}}
 \toprule
-\textbf{Couche} & \textbf{Fichiers} & \textbf{Rôle} \\
+\textbf{Binaire} & \textbf{Source principale} & \textbf{Rôle} \\
 \midrule
-Programme serveur & \texttt{src/serverFTP.c} & Démarrage du serveur, création du pool de processus, attente des connexions et arrêt propre. \\
-Programme client & \texttt{src/clientFTP.c} & Interaction avec l'utilisateur, parsing de la commande \texttt{get}, affichage des messages et statistiques. \\
-Traitement métier & \texttt{src/server\_requests.c}, \texttt{src/client\_requests.c} & Logique de traitement d'une requête \texttt{GET} côté serveur et côté client. \\
-Protocole applicatif & \texttt{include/ftp\_shared.h}, \texttt{src/ftp\_protocol.c} & Définition des structures communes, validation, émission et lecture de \texttt{request\_t} et \texttt{response\_t}. \\
-Transfert de fichier & \texttt{src/ftp\_transfer.c} & Chargement d'un fichier côté serveur et écriture du payload côté client. \\
-Préparation d'exécution & \texttt{src/ftp\_runtime.c} & Changement vers le bon répertoire de travail local. \\
-Bibliothèque système & \texttt{src/csapp.c}, \texttt{include/csapp.h} & Wrappers robustes pour sockets, processus, signaux et E/S. \\
-Fonction utilitaire & \texttt{src/utils.c}, \texttt{include/utils.h} & Fonctions utilitaires. \\
+\texttt{bin/clientFTP} & \texttt{src/clientFTP.c} & Lit les commandes utilisateur, se connecte au maître ou à un esclave, puis affiche les résultats. \\
+\texttt{bin/masterFTP} & \texttt{src/server\_master.c} & Enregistre les esclaves au démarrage et redirige les clients en round-robin. \\
+\texttt{bin/serverFTP} & \texttt{src/serverFTP.c} & Traite les commandes FTP sur un esclave et gère aussi la réplication sur le port de contrôle. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\subsection{Rôle des répertoires}
+\subsection{Répertoires importants}
 
 \begin{center}
 \small
@@ -358,522 +338,831 @@ Fonction utilitaire & \texttt{src/utils.c}, \texttt{include/utils.h} & Fonctions
 \toprule
 \textbf{Répertoire} & \textbf{Utilité} \\
 \midrule
-\texttt{include/} & Contient les en-têtes, constantes, structures communes et prototypes des fonctions. \\
-\texttt{src/} & Contient tout le code source C réellement exécuté ou compilé. \\
-\texttt{data\_server/} & Contient les fichiers disponibles côté serveur, c'est-à-dire les fichiers que le client peut demander avec \texttt{GET}. \\
-\texttt{data\_client/} & Contient les fichiers reçus depuis le serveur. \\
-\texttt{bin/} & Contient les objets compilés et les binaires finaux. \\
-\texttt{scripts/} & Contient les scripts de test et d'exécution. \\
-\texttt{logs/} & Contient les logs de test et d'exécution. \\
+\texttt{include/} & Tous les fichiers d'en-tête, les constantes, les structures et les prototypes. \\
+\texttt{src/} & Le code C du projet. \\
+\texttt{data\_client/} & Les fichiers locaux du client. Les téléchargements arrivent ici. Les fichiers envoyés avec \texttt{put} partent de là. \\
+\texttt{data\_server/} & Les fichiers vus par les serveurs. Les \texttt{get}, \texttt{ls}, \texttt{put} et \texttt{rm} agissent ici. \\
+\texttt{scripts/} & Les scripts de démonstration et de test. \\
+\texttt{logs/} & Les logs générés par les scripts. \\
+\texttt{bin/} & Les objets compilés et les exécutables. \\
 \bottomrule
 \end{tabularx}
 \end{center}
-
-\newpage \section{Client et serveur et description du protocole}
 
 \begin{warningbox}
-Même si les tests locaux se font souvent sur une seule machine, il faut raisonner
-comme si le client et le serveur étaient sur deux machines différentes.
+Dans ce dépôt, les deux esclaves travaillent dans le même dossier
+\texttt{data\_server/}. La séparation entre client et serveur est donc bien
+réelle, mais la séparation entre les deux esclaves reste surtout logique.
 
-Autrement dit :
-
-\begin{itemize}[leftmargin=*]
-    \item \texttt{data\_server/} représente le disque local du serveur ;
-    \item \texttt{data\_client/} représente le disque local du client ;
-    \item le fichier ne doit jamais être copié par accès direct au système de
-    fichiers ;
-    \item le fichier doit obligatoirement passer par la socket TCP.
-\end{itemize}
+Autrement dit, nous avons bien un protocole de réplication dans le code, mais
+les deux esclaves ne stockent pas leurs fichiers dans deux dossiers physiques
+différents.
 \end{warningbox}
 
-Cette manière de raisonner explique plusieurs choix du projet :
-
-\begin{itemize}[leftmargin=*]
-    \item le client ne lit jamais dans \texttt{data\_server/} ;
-    \item le serveur n'écrit jamais dans \texttt{data\_client/} ;
-    \item la structure \texttt{request\_t} transporte le nom du fichier via le réseau ;
-    \item la structure \texttt{response\_t} transporte le statut et la taille du fichier ;
-    \item le contenu du fichier est envoyé comme un flux d'octets TCP.
-\end{itemize}
-
-\subsection{Constantes et structures communes}
-
-Le fichier \texttt{include/ftp\_shared.h} définit les éléments communs au client
-et au serveur.
-
-\begin{itemize}[leftmargin=*]
-    \item \texttt{FTP\_MASTER\_PORT} réserve le port \texttt{2121} au serveur maître.
-    \item \texttt{NB\_SLAVES} fixe statiquement le nombre de serveurs esclaves.
-    \item \texttt{FTP\_SLAVE\_CLIENT\_BASE\_PORT} et \texttt{FTP\_SLAVE\_CTRL\_BASE\_PORT} définissent les plages de ports utilisées par les esclaves.
-    \item \texttt{FTP\_SLAVE\_CLIENT\_PORT(id)} et \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} calculent les ports effectifs d'un esclave donné.
-    \item \texttt{FTP\_PROTO\_VERSION} identifie la version courante du protocole.
-    \item \texttt{FTP\_BLOCK\_SIZE} fixe la taille du tampon utilisé pour recevoir
-    un payload côté client.
-    \item \texttt{NB\_PROC} fixe le nombre de processus workers du serveur.
-\end{itemize}
-
-Deux structures sont au cœur du dialogue :
-
-\begin{itemize}[leftmargin=*]
-    \item \texttt{request\_t} : message client vers serveur ;
-    \item \texttt{response\_t} : message serveur vers client.
-\end{itemize}
-
-\subsection{Pourquoi les structures sont utiles}
-
-\begin{sciencebox}
-Utiliser des structures fixes simplifie beaucoup la logique :
-
-\begin{itemize}[leftmargin=*]
-    \item le client sait exactement quoi envoyer ;
-    \item le serveur sait exactement combien d'octets lire pour une requête ;
-    \item le client sait exactement combien d'octets lire pour une réponse ;
-    \item le champ \texttt{file\_size} permet ensuite de savoir combien d'octets
-    lire pour le contenu du fichier.
-\end{itemize}
-\end{sciencebox}
-
-Le type \texttt{typereq\_t} est également pensé pour l'avenir. Même si seule la
-commande \texttt{GET} est exploitée aujourd'hui, les types futurs \texttt{PUT},
-\texttt{LS}, \texttt{RM}, \texttt{BYE} et \texttt{AUTH} existent déjà pour garder
-une base extensible.
-
-\newpage \subsection{Fonctions importantes et rôle de chacune}
-
-\subsubsection{Fonctions du client}
+\subsection{Fichiers les plus importants}
 
 \begin{center}
 \small
-\begin{tabularx}{\textwidth}{@{}L{0.22\textwidth}L{0.24\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}L{0.26\textwidth}L{0.66\textwidth}@{}}
 \toprule
-\textbf{Fonction} & \textbf{Fichier} & \textbf{Utilité} \\
+\textbf{Fichier} & \textbf{Rôle} \\
 \midrule
-\codecell{parse_get_command} & \codecell{src/clientFTP.c} & Analyse la ligne saisie par l'utilisateur. N'accepte que la forme \texttt{get <nom\_fichier>} et refuse les commandes invalides. \\
-\codecell{ftp_client_run} & \codecell{src/clientFTP.c} & Fonction principale du client. Se place dans \texttt{data\_client/}, ouvre la connexion, lit la commande interactive, lance le \texttt{GET}, puis affiche les statistiques. \\
-\codecell{ftp_client_get} & \codecell{src/client_requests.c} & Gère tout le \texttt{GET} côté client : validation du nom de fichier, construction de la requête, envoi, réception de la réponse, réception du payload, mesure du temps. \\
-\codecell{check_size_file} & \codecell{src/utils.c} & retourne la taille d'un fichier si il est valide. \\
+\texttt{include/ftp\_shared.h} & Définit les constantes, les types de requêtes, les statuts et les structures réseau. \\
+\texttt{src/ftp\_protocol.c} & Sérialise, désérialise, valide et envoie les messages du protocole. \\
+\texttt{src/ftp\_transfer.c} & Envoie et reçoit les payloads des fichiers et des listes. \\
+\texttt{src/clientFTP.c} & Gère l'entrée utilisateur et la connexion côté client. \\
+\texttt{src/client\_requests.c} & Implémente \texttt{get}, \texttt{put}, \texttt{ls}, \texttt{rm}, \texttt{auth}, \texttt{bye} côté client. \\
+\texttt{src/serverFTP.c} & Démarre un esclave, lance les workers et garde le port de contrôle ouvert. \\
+\texttt{src/server\_requests.c} & Implémente les commandes côté serveur et la réplication. \\
+\texttt{src/server\_master.c} & Démarre le maître, enregistre les esclaves et répartit les clients. \\
+\texttt{src/csapp.c} & Fournit des wrappers utiles pour les sockets, les E/S robustes et les signaux. \\
+\texttt{Makefile} & Construit les trois binaires et propose quelques cibles pratiques. \\
 \bottomrule
 \end{tabularx}
 \end{center}
+\newpage
+\section{Architecture générale}
 
-\subsubsection{Fonctions du serveur}
+\subsection{Rôle de chaque programme}
 
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.22\textwidth}L{0.24\textwidth}X@{}}
-\toprule
-\textbf{Fonction} & \textbf{Fichier} & \textbf{Utilité} \\
-\midrule
-\codecell{safe_close_listenfd} & \codecell{src/serverFTP.c} & Ferme proprement la socket d'écoute si elle est encore ouverte. \\
-\codecell{parent_sigint_handler} & \codecell{src/serverFTP.c} & Handler \texttt{SIGINT} du père : marque l'arrêt, ferme la socket d'écoute et propage le signal aux fils. \\
-\codecell{child_sigint_handler} & \codecell{src/serverFTP.c} & Handler \texttt{SIGINT} des workers : arrête le worker, ferme la connexion courante et sort proprement. \\
-\codecell{install_handler} & \codecell{src/serverFTP.c} & Configure un handler via \texttt{sigaction} sans dupliquer le même code à plusieurs endroits. \\
-\codecell{worker_loop} & \codecell{src/serverFTP.c} & Boucle d'attente d'un worker : \texttt{accept()}, identification du client, traitement de la connexion, fermeture. \\
-\codecell{ftp_server_run} & \codecell{src/serverFTP.c} & Fonction principale du serveur : changement de répertoire, ouverture du port, création du pool de processus, attente de fin. \\
-\codecell{validate_request} & \codecell{src/server_requests.c} & Vérifie qu'une requête reçue a une bonne version, un bon type et un nom de fichier sûr. \\
-\codecell{handle_get_request} & \codecell{src/server_requests.c} & Exécute la logique métier d'un \texttt{GET} : chargement du fichier, réponse, envoi du contenu. \\
-\codecell{ftp_handle_client} & \codecell{src/server_requests.c} & Orchestration complète d'une connexion côté serveur. \\
-\bottomrule
-\end{tabularx}
-\end{center}
+\subsubsection{Le client}
 
-\subsubsection{Fonctions du protocole, du transfert et des helpers}
-
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{@{}L{0.22\textwidth}L{0.24\textwidth}X@{}}
-\toprule
-\textbf{Fonction} & \textbf{Fichier} & \textbf{Utilité} \\
-\midrule
-\codecell{ftp_is_safe_filename} & \codecell{src/ftp_protocol.c} & Refuse les noms de fichiers dangereux comme \texttt{..}, \texttt{/etc/passwd} ou les chemins contenant un \texttt{/}. \\
-\codecell{ftp_build_get_request} & \codecell{src/ftp_protocol.c} & Initialise une structure \texttt{request\_t} cohérente pour une requête \texttt{GET}. \\
-\codecell{ftp_receive_request} & \codecell{src/ftp_protocol.c} & Lit exactement une \texttt{request\_t} depuis la socket côté serveur. \\
-\codecell{ftp_send_response} & \codecell{src/ftp_protocol.c} & Construit puis envoie une \texttt{response\_t} au client. \\
-\codecell{ftp_receive_response} & \codecell{src/ftp_protocol.c} & Lit exactement une \texttt{response\_t} côté client. \\
-\codecell{ftp_status_to_string} & \codecell{src/ftp_protocol.c} & Traduit un code de statut en texte lisible pour les messages d'erreur. \\
-\codecell{ftp_load_file} & \codecell{src/ftp_transfer.c} & Charge un fichier complet en mémoire côté serveur et renseigne la taille ainsi que le statut éventuel. \\
-\codecell{ftp_receive_file_payload} & \codecell{src/ftp_transfer.c} & Lit le payload binaire envoyé par le serveur et l'écrit dans un fichier local du client. \\
-\codecell{write_full} & \codecell{src/ftp_transfer.c} & Helper interne qui s'assure qu'un tampon entier est bien écrit sur disque, même si un appel à \texttt{write()} ne vide pas tout d'un coup. \\
-\codecell{ftp_enter_working_directory} & \codecell{src/ftp_runtime.c} & Place le processus dans son répertoire de travail local et affiche le chemin courant pour le debug. \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\subsubsection{Wrappers \texttt{csapp} réellement utilisés}
-
-\begin{center}
-\small
-\begin{tabularx}{\textwidth}{@{}T{0.24\textwidth}L{0.68\textwidth}@{}}
-\toprule
-\textbf{Wrapper} & \textbf{Pourquoi il est utile ici} \\
-\midrule
-\codecell{Open_listenfd} & Ouvre la socket d'écoute du serveur sur le port choisi, avec les appels système nécessaires déjà encapsulés. \\
-\codecell{Open_clientfd} & Ouvre une connexion TCP vers le serveur à partir d'un nom de machine ou d'une adresse IP. \\
-\codecell{Rio_readn} & Lit exactement le nombre d'octets attendu, ce qui est essentiel pour les structures fixes du protocole. \\
-\codecell{Rio_writen} & Écrit exactement le nombre d'octets demandé, même si l'appel système n'écrit pas tout en une fois. \\
-\codecell{Fgets} & Lit proprement la ligne \texttt{ftp> get fichier} côté client. \\
-\codecell{Close} & Ferme proprement un descripteur de fichier ou de socket. \\
-\codecell{Fork} & Sert à créer les workers du pool de processus. \\
-\codecell{Getnameinfo} et \codecell{Inet_ntop} & Servent à afficher les informations sur le client connecté. \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\subsection{Comment ça marche côté réseau}
-
-\subsubsection{Pourquoi TCP convient au projet}
-
-Le projet repose sur TCP. C'est un choix naturel pour un mini-FTP, car TCP fournit :
+Le client fait trois choses :
 
 \begin{itemize}[leftmargin=*]
-    \item une livraison fiable des octets ;
-    \item le respect de l'ordre d'envoi ;
-    \item la détection de la fermeture de la connexion ;
-    \item une abstraction pratique pour transporter aussi bien des structures
-    de protocole que des fichiers binaires.
+    \item il lit une ligne tapée par l'utilisateur ;
+    \item il transforme cette ligne en commande ;
+    \item il envoie une requête réseau puis affiche le résultat.
 \end{itemize}
 
-\begin{sciencebox}
-TCP est un \textbf{flux d'octets} et non un système de messages déjà découpés.
-Cela signifie qu'un \texttt{read()} peut renvoyer moins d'octets que demandé.
-Le projet s'appuie donc sur \texttt{Rio\_readn()} et \texttt{Rio\_writen()}
-pour garantir l'envoi et la réception complets des messages attendus.
-\end{sciencebox}
+Le client sait parler soit directement à un esclave, soit au maître. Si nous lui
+donnons le port \texttt{2121}, il demande d'abord une redirection au maître.
+Sinon, il se connecte directement au port donné.
 
-\subsubsection{Ouverture de la connexion}
+\subsubsection{Le maître}
 
-\paragraph{Côté serveur}
+Le maître sert de répartiteur de charge très simple.
 
-Le programme d'écoute appelle \texttt{Open\_listenfd()} sur le port qui lui est
-attribué. Dans \texttt{csapp}, cela
-effectue les étapes classiques :
+Il fait deux choses :
+
+\begin{itemize}[leftmargin=*]
+    \item au démarrage, il contacte tous les esclaves sur leurs ports de contrôle ;
+    \item ensuite, il choisit un esclave pour chaque nouveau client.
+\end{itemize}
+
+Le choix se fait en \textbf{round-robin}. Cela veut dire que nous prenons un
+esclave, puis le suivant, puis le suivant, et ainsi de suite.
+
+\subsubsection{Les esclaves}
+
+Chaque esclave fait en réalité deux travaux en même temps :
+
+\begin{itemize}[leftmargin=*]
+    \item il traite les commandes FTP des clients sur son port client ;
+    \item il écoute aussi les messages de réplication sur son port de contrôle.
+\end{itemize}
+
+Le père garde le port de contrôle. Les workers traitent les clients.
+
+\subsection{Démarrage du cluster}
+
+Le démarrage suit toujours le même ordre :
 
 \begin{enumerate}[leftmargin=*]
-    \item création d'une socket IPv4 de type \texttt{SOCK\_STREAM} ;
-    \item activation de \texttt{SO\_REUSEADDR} ;
-    \item association à \texttt{INADDR\_ANY} ;
-    \item conversion du port avec \texttt{htons()} ;
-    \item \texttt{bind()} puis \texttt{listen()}.
+    \item nous lançons un esclave avec un identifiant, par exemple \texttt{1} ;
+    \item cet esclave se place dans \texttt{data\_server/} ;
+    \item il ouvre son port client et son port de contrôle ;
+    \item il attend que le maître se connecte sur le port de contrôle ;
+    \item nous faisons la même chose avec le second esclave ;
+    \item nous lançons ensuite le maître ;
+    \item le maître se connecte aux ports de contrôle \texttt{4001} et
+    \texttt{4002} sur \texttt{127.0.0.1} ;
+    \item chaque esclave envoie son identité au maître ;
+    \item le maître construit la carte du cluster et la renvoie à chaque esclave ;
+    \item seulement après cela, le maître écoute sur \texttt{2121}.
 \end{enumerate}
 
-\paragraph{Côté client}
+Dans la configuration actuelle :
 
-Le client appelle \texttt{Open\_clientfd(host, FTP\_MASTER\_PORT)}. Cette fonction :
+\begin{itemize}[leftmargin=*]
+    \item l'esclave 1 écoute pour les clients sur \texttt{3001} et pour le contrôle sur \texttt{4001} ;
+    \item l'esclave 2 écoute pour les clients sur \texttt{3002} et pour le contrôle sur \texttt{4002} ;
+    \item le maître écoute pour les clients sur \texttt{2121}.
+\end{itemize}
+
+\subsection{Démarrage d'une session client}
+
+Quand nous lançons \texttt{clientFTP}, nous faisons d'abord :
 
 \begin{enumerate}[leftmargin=*]
-    \item résout le nom d'hôte avec \texttt{getaddrinfo()} ;
-    \item récupère l'adresse IPv4 du serveur ;
-    \item convertit le port avec \texttt{htons()} ;
-    \item lance \texttt{connect()}.
+    \item un changement de répertoire vers \texttt{data\_client/} ;
+    \item une connexion réseau ;
+    \item l'affichage de l'invite \texttt{FTP >>>}.
 \end{enumerate}
 
-\subsubsection{Pourquoi les fonctions \texttt{hton}/\texttt{ntoh} sont importantes}
-
-\begin{warningbox}
-Deux machines différentes peuvent ne pas représenter les entiers de la même façon
-en mémoire. Il faut donc distinguer l'ordre hôte et l'ordre réseau.
-
-Les conversions classiques sont :
+Ensuite, deux cas existent :
 
 \begin{itemize}[leftmargin=*]
-    \item \texttt{htons()} et \texttt{ntohs()} pour les entiers 16 bits ;
-    \item \texttt{htonl()} et \texttt{ntohl()} pour les entiers 32 bits.
+    \item si nous passons un port d'esclave comme \texttt{3001}, le client se connecte directement à cet esclave ;
+    \item si nous passons \texttt{2121}, le client se connecte d'abord au maître, reçoit l'adresse d'un esclave, ferme la première connexion, puis ouvre une seconde connexion vers cet esclave.
 \end{itemize}
-\end{warningbox}
+\newpage
+\section{Le protocole réseau}
 
-Dans le projet actuel, ces conversions sont déjà bien utilisées au niveau des
-sockets, notamment pour les numéros de port.
+\subsection{Pourquoi nous utilisons TCP}
 
-En revanche, il faut être précis sur le protocole applicatif :
+Nous utilisons TCP parce que nous voulons un flux fiable d'octets.
+
+Pour ce projet, TCP nous apporte :
 
 \begin{itemize}[leftmargin=*]
-    \item les structures \texttt{request\_t} et \texttt{response\_t} sont encore
-    envoyées telles quelles ;
-    \item cela fonctionne dans nos tests, car client et serveur sont compilés dans
-    un environnement homogène ;
-    \item pour une vraie robustesse inter-machines, il faudrait sérialiser
-    explicitement tous les champs numériques du protocole.
+    \item l'ordre des données ;
+    \item la détection des coupures ;
+    \item une base simple pour envoyer à la fois des messages de protocole et des fichiers.
 \end{itemize}
 
 \begin{tipbox}
-La prochaine amélioration réseau réellement propre serait d'introduire une
-conversion d'ordre des octets sur tous les champs entiers de \texttt{request\_t}
-et \texttt{response\_t}, y compris les tailles de fichier et offsets.
+TCP n'envoie pas des ``messages'' tout prêts. TCP envoie un flux. Cela veut
+dire qu'un \texttt{read()} peut renvoyer moins d'octets que prévu. C'est pour
+cela que nous utilisons des fonctions robustes comme \texttt{rio\_readn()} et
+\texttt{rio\_writen()}.
 \end{tipbox}
 
-\newpage \section{Etape 1 : Serveur FTP de base}
+\subsection{Messages principaux}
 
-L'étape I couvre les questions Q1 à Q7 : définition des structures de requête et
-de réponse, création du client et du serveur, pool de processus, répertoires de
-travail, traitement de \texttt{GET} et affichage des statistiques côté client.
+Nous avons défini les messages communs dans \texttt{include/ftp\_shared.h}.
 
-\subsection{Démarrage du serveur}
+\subsubsection{La requête client}
 
-\begin{enumerate}[leftmargin=*]
-    \item \texttt{ftp\_server\_run()} appelle \texttt{ftp\_enter\_working\_directory()} et se place dans \texttt{data\_server/}.
-    \item Le serveur ouvre la socket d'écoute sur le port \texttt{2121}.
-    \item Le père crée \texttt{NB\_PROC} workers avec \texttt{Fork()}.
-    \item Chaque worker entre dans \texttt{worker\_loop()} et attend une connexion.
-\end{enumerate}
-
-\subsection{Démarrage du client}
-
-\begin{enumerate}[leftmargin=*]
-    \item \texttt{ftp\_client\_run(host)} se place dans \texttt{data\_client/}.
-    \item Le client ouvre une connexion TCP vers l'hôte demandé.
-    \item Il affiche \texttt{Connected to ...} puis \texttt{ftp> }.
-    \item Il lit une ligne utilisateur avec \texttt{Fgets()}.
-\end{enumerate}
-
-\subsection{Parsing et construction de la requête}
-
-La fonction \texttt{parse\_get\_command()} extrait le nom du fichier et vérifie
-que la commande est bien de la forme \texttt{get <nom\_fichier>}.
-
-Ensuite, \texttt{ftp\_client\_get()} :
-
-\begin{enumerate}[leftmargin=*]
-    \item vérifie que le nom de fichier est sûr ;
-    \item vérifie que le fichier n'existe pas déjà dans \texttt{data\_client/};
-    \item initialise \texttt{request\_t} via \texttt{ftp\_build\_get\_request()} ;
-    \item mesure le temps de transfert ;
-    \item envoie la requête au serveur avec \texttt{Rio\_writen()}.
-\end{enumerate}
-
-\subsection{Traitement côté serveur}
-
-Le worker serveur reçoit la connexion puis :
-
-\begin{enumerate}[leftmargin=*]
-    \item lit une \texttt{request\_t} complète avec \texttt{ftp\_receive\_request()} ;
-    \item vérifie version, type et nom de fichier avec \texttt{validate\_request()} ;
-    \item traite le \texttt{GET} avec \texttt{handle\_get\_request()} ;
-    \item charge le fichier demandé avec \texttt{ftp\_load\_file()} ;
-    \item décalle la lecture au bon offset en cas de reprise ;
-    \item envoie \texttt{response\_t} ;
-    \item envoie le contenu binaire du fichier.
-\end{enumerate}
-
-\subsection{Réception côté client}
-
-Le client :
-
-\begin{enumerate}[leftmargin=*]
-    \item lit \texttt{response\_t} avec \texttt{ftp\_receive\_response()} ;
-    \item vérifie le statut ;
-    \item décale la lecture au bon offset en cas de reprise ;
-    \item si le statut est \texttt{OK}, lit exactement \texttt{file\_size} octets ;
-    \item écrit ces octets dans un fichier local avec \texttt{ftp\_receive\_file\_payload()} ;
-    \item calcule la durée et le débit moyen ;
-    \item affiche le message final.
-\end{enumerate}
-
-\begin{examplebox}
-\textbf{Chemin logique d'un transfert réussi}
-
-\begin{center}
-\texttt{clientFTP} $\rightarrow$ \texttt{request\_t} $\rightarrow$ \texttt{serverFTP}
-
-\texttt{serverFTP} $\rightarrow$ \texttt{response\_t + payload} $\rightarrow$ \texttt{clientFTP}
-\end{center}
-\end{examplebox}
-
-\subsection{Pourquoi l'implémentation fonctionne}
-
-\subsubsection{Parce qu'une connexion transporte une seule requête}
-
-Le projet suit une règle simple :
-
-\begin{quote}
-\textbf{Une seule requête à la fois.}
-\end{quote}
-
-Cette décision simplifie fortement le protocole :
+La structure \texttt{request\_t} contient :
 
 \begin{itemize}[leftmargin=*]
-    \item le client ouvre une connexion ;
-    \item il envoie une requête ;
-    \item il reçoit une réponse ;
-    \item il reçoit éventuellement un fichier ;
-    \item il renvoie une autre commande ou met fin à la connexion ;
+    \item la version du protocole ;
+    \item le type de requête ;
+    \item un offset pour la reprise ;
+    \item une taille de fichier pour \texttt{put} ;
+    \item une taille de bloc ;
+    \item un nom de fichier ;
+    \item un login ;
+    \item un mot de passe.
 \end{itemize}
 
-Il y a y a une boucle persitante coté clients pour permettre d'envoyer plusieurs commandes.
+\subsubsection{La réponse serveur}
 
-\subsubsection{Parce que la taille des échanges est connue}
-
-Le serveur et le client savent toujours combien d'octets attendre :
+La structure \texttt{response\_t} contient :
 
 \begin{itemize}[leftmargin=*]
-    \item une requête a toujours la taille de \texttt{request\_t} ;
-    \item une réponse a toujours la taille de \texttt{response\_t} ;
-    \item un fichier a la taille \texttt{file\_size} annoncée dans la réponse.
+    \item un statut ;
+    \item le type de requête concerné ;
+    \item la taille totale du fichier ;
+    \item l'offset accepté par le serveur ;
+    \item la taille d'un payload supplémentaire.
 \end{itemize}
 
-Cette propriété évite les ambiguïtés dans le flux TCP.
+Le champ \texttt{payload\_size} est utile pour \texttt{ls}, car la réponse
+contient alors un texte après l'en-tête.
 
-\subsubsection{Parce que la sécurité minimale est centralisée}
+\subsubsection{Les messages de contrôle}
 
-La fonction \texttt{ftp\_is\_safe\_filename()} bloque les demandes dangereuses,
-comme :
+Nous utilisons aussi d'autres messages :
 
 \begin{itemize}[leftmargin=*]
-    \item \texttt{get ../secret} ;
-    \item \texttt{get /etc/passwd} ;
-    \item \texttt{get .} ;
-    \item \texttt{get ..}.
+    \item \texttt{slave\_hello\_t} : identité d'un esclave ;
+    \item \texttt{slave\_cluster\_t} : carte complète du cluster ;
+    \item \texttt{ftp\_replication\_request\_t} : ordre de réplication pour
+    \texttt{put} et \texttt{rm} ;
+    \item \texttt{ftp\_control\_reply\_t} : accusé de réception sur le canal de contrôle.
 \end{itemize}
 
-Le contrôle est volontairement centralisé pour que client et serveur reposent sur
-la même règle de validation.
+\subsection{Ordre des octets et sérialisation}
 
-\subsubsection{Parce que l'arrêt du serveur est propre}
+Un point important du projet est maintenant le suivant :
 
-Le serveur gère correctement l'arrêt via \texttt{SIGINT} :
+\begin{warningbox}
+Nous n'envoyons plus les structures C brutes sur le réseau.
+
+Nous écrivons chaque champ nous-mêmes dans un buffer réseau. Cela évite les
+problèmes de padding mémoire et les problèmes d'endianness entre machines.
+\end{warningbox}
+
+Concrètement :
 
 \begin{itemize}[leftmargin=*]
-    \item le père relaie le signal aux fils ;
-    \item les descripteurs utiles sont fermés ;
-    \item les workers sortent proprement ;
-    \item le père attend leur terminaison.
+    \item pour les ports réseau, les wrappers sockets utilisent déjà
+    \texttt{htons()} ;
+    \item pour nos messages applicatifs, nous utilisons \texttt{htonl()} et
+    \texttt{ntohl()} pour les champs 32 bits ;
+    \item pour les champs 64 bits, nous utilisons un helper dédié du même genre ;
+    \item à la réception, nous faisons l'opération inverse avant d'utiliser les valeurs.
 \end{itemize}
 
-Cette logique évite les processus zombies et les ressources laissées ouvertes.
+Nous faisons aussi une validation après décodage :
 
-\newpage \section{Etape 2 : Amélioration du serveur FTP}
+\begin{itemize}[leftmargin=*]
+    \item version du protocole ;
+    \item type de requête ;
+    \item statut ;
+    \item taille de bloc ;
+    \item cohérence des offsets et des tailles ;
+    \item cohérence des messages de contrôle.
+\end{itemize}
 
-L'étape II couvre les questions Q8 à Q10. Elle ajoute le transfert par blocs,
-la possibilité d'enchaîner plusieurs commandes dans une même session et la
-reprise d'un téléchargement interrompu à partir d'un offset.
+Si un message semble avoir été envoyé avec le mauvais ordre des octets, nous le
+refusons.
 
-\subsection{Tests réalisés}
+\begin{infobox}
+Nous ne convertissons pas le contenu des fichiers eux-mêmes. C'est normal : un
+fichier doit voyager comme une suite brute d'octets. Seuls les en-têtes du
+protocole doivent être convertis.
+\end{infobox}
+
+\subsection{Lecture exacte et écriture exacte}
+
+Le protocole fonctionne parce que nous savons toujours combien d'octets lire :
+
+\begin{itemize}[leftmargin=*]
+    \item une requête a une taille fixe sur le réseau ;
+    \item une réponse a une taille fixe sur le réseau ;
+    \item un message de contrôle a une taille fixe sur le réseau ;
+    \item un fichier ou une liste a une taille annoncée dans l'en-tête.
+\end{itemize}
+
+Cela simplifie beaucoup le traitement :
+
+\begin{itemize}[leftmargin=*]
+    \item nous lisons l'en-tête complet ;
+    \item nous interprétons les champs ;
+    \item nous lisons ensuite exactement le payload attendu.
+\end{itemize}
+
+\subsection{Sécurité minimale sur les noms de fichiers}
+
+La fonction \texttt{ftp\_is\_safe\_filename()} refuse les noms dangereux.
+
+Nous bloquons par exemple :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{..} ;
+    \item \texttt{.} ;
+    \item les chemins avec \texttt{/} ;
+    \item les noms vides.
+\end{itemize}
+
+Cette règle est simple, mais elle évite les sorties du répertoire de travail.
+\newpage
+\section{Comment une session fonctionne}
+
+\subsection{Boucle générale}
+
+Une session FTP sur un esclave suit cette idée simple :
+
+\begin{enumerate}[leftmargin=*]
+    \item le client envoie une requête ;
+    \item le serveur la lit ;
+    \item le serveur la valide ;
+    \item le serveur exécute l'action ;
+    \item le serveur envoie une réponse ;
+    \item si nécessaire, un payload suit la réponse.
+\end{enumerate}
+
+La connexion reste ouverte pour les commandes suivantes. Elle se termine avec
+\texttt{bye} ou en cas d'erreur.
+
+\subsection{Commande \texttt{get}}
+
+\subsubsection{Côté client}
+
+Quand nous faisons \texttt{get fichier}, le client :
+
+\begin{enumerate}[leftmargin=*]
+    \item vérifie le nom du fichier ;
+    \item regarde si un fichier local du même nom existe déjà ;
+    \item utilise sa taille locale comme offset de reprise ;
+    \item construit une requête \texttt{GET} ;
+    \item envoie la requête ;
+    \item reçoit la réponse ;
+    \item reçoit le reste du fichier et l'écrit localement ;
+    \item affiche la taille transférée, le temps et le débit.
+\end{enumerate}
+
+\subsubsection{Côté serveur}
+
+Quand un esclave reçoit ce \texttt{GET}, il :
+
+\begin{enumerate}[leftmargin=*]
+    \item vérifie la requête ;
+    \item fait un \texttt{stat()} sur le fichier demandé ;
+    \item ouvre le fichier ;
+    \item compare l'offset demandé avec la taille réelle ;
+    \item si l'offset est valable, se place au bon endroit ;
+    \item envoie une réponse \texttt{OK} ou \texttt{RESTART} ;
+    \item envoie ensuite le contenu du fichier par blocs.
+\end{enumerate}
+
+\subsubsection{Pourquoi la reprise marche}
+
+La reprise marche parce que :
+
+\begin{itemize}[leftmargin=*]
+    \item le client connaît la taille de son fichier local ;
+    \item cette taille est envoyée dans \texttt{request\_t.offset} ;
+    \item le serveur renvoie l'offset accepté dans \texttt{response\_t.offset} ;
+    \item le client écrit ensuite au bon endroit dans le fichier local.
+\end{itemize}
+
+\subsection{Commande \texttt{ls}}
+
+Quand nous faisons \texttt{ls}, le serveur :
+
+\begin{enumerate}[leftmargin=*]
+    \item parcourt le répertoire courant ;
+    \item ignore les noms cachés qui commencent par \texttt{.} ;
+    \item construit une grande chaîne avec un nom par ligne ;
+    \item envoie une réponse \texttt{OK} ;
+    \item envoie ensuite ce texte comme payload.
+\end{enumerate}
+
+Le client lit ce texte et l'affiche tel quel.
+
+\subsection{Commande \texttt{put}}
+
+Quand nous faisons \texttt{put fichier}, le client :
+
+\begin{enumerate}[leftmargin=*]
+    \item vérifie le nom du fichier ;
+    \item fait un \texttt{stat()} local ;
+    \item ouvre le fichier à envoyer ;
+    \item met sa taille dans la requête ;
+    \item envoie la requête ;
+    \item attend un premier \texttt{OK} du serveur ;
+    \item envoie le contenu du fichier ;
+    \item attend un second \texttt{OK}.
+\end{enumerate}
+
+Le serveur :
+
+\begin{enumerate}[leftmargin=*]
+    \item refuse si la session n'est pas authentifiée ;
+    \item envoie un premier \texttt{OK} s'il est prêt ;
+    \item reçoit le fichier et l'écrit localement ;
+    \item tente de le répliquer vers les autres esclaves ;
+    \item envoie enfin un second \texttt{OK} au client.
+\end{enumerate}
+
+\subsection{Commande \texttt{rm}}
+
+Quand nous faisons \texttt{rm fichier}, le serveur :
+
+\begin{enumerate}[leftmargin=*]
+    \item refuse si la session n'est pas authentifiée ;
+    \item supprime le fichier local ;
+    \item tente de propager la suppression aux autres esclaves ;
+    \item renvoie un statut final.
+\end{enumerate}
+
+\subsection{Commande \texttt{auth}}
+
+La commande \texttt{auth <login> <password>} agit sur la session courante.
+
+Le serveur compare les identifiants reçus à deux constantes :
+
+\begin{itemize}[leftmargin=*]
+    \item login : \texttt{admin} ;
+    \item mot de passe : \texttt{srftp}.
+\end{itemize}
+
+Si les identifiants sont bons, la session devient authentifiée. Sinon, elle ne
+l'est pas.
+
+\subsection{Commande \texttt{bye}}
+
+La commande \texttt{bye} est simple :
+
+\begin{itemize}[leftmargin=*]
+    \item le client envoie une requête \texttt{BYE} ;
+    \item le serveur répond \texttt{OK} ;
+    \item le client affiche \texttt{Bye!} ;
+    \item la connexion se ferme.
+\end{itemize}
+\newpage
+\section{Répartition de charge et réplication}
+
+\subsection{Enregistrement des esclaves}
+
+Chaque esclave envoie au maître un message \texttt{slave\_hello\_t}. Ce message
+contient :
+
+\begin{itemize}[leftmargin=*]
+    \item la version du protocole ;
+    \item l'identifiant de l'esclave ;
+    \item son port client ;
+    \item son port de contrôle ;
+    \item son nom de machine.
+\end{itemize}
+
+Le maître vérifie ces informations, puis les garde dans un tableau local.
+
+\subsection{Carte du cluster}
+
+Quand tous les esclaves sont enregistrés, le maître construit un
+\texttt{slave\_cluster\_t} qui contient la liste complète des esclaves.
+
+Chaque esclave reçoit cette carte. Grâce à elle, un esclave sait vers quels
+autres esclaves il doit envoyer une réplication.
+
+\subsection{Redirection du client}
+
+Quand un client se connecte au maître :
+
+\begin{enumerate}[leftmargin=*]
+    \item le maître choisit un esclave ;
+    \item il envoie au client le \texttt{slave\_hello\_t} de cet esclave ;
+    \item il ferme la connexion ;
+    \item le client ouvre ensuite sa vraie session avec cet esclave.
+\end{enumerate}
+
+Le choix de l'esclave se fait en round-robin. C'est volontairement simple.
+
+\subsection{Reconnexion après panne}
+
+La reconnexion automatique existe seulement pour \texttt{get}.
+
+Si le client détecte une erreur réseau pendant un \texttt{get}, il :
+
+\begin{enumerate}[leftmargin=*]
+    \item ferme la connexion cassée ;
+    \item tente de se reconnecter ;
+    \item si besoin, repasse par le maître ;
+    \item relance le même \texttt{get} ;
+    \item reprend le transfert grâce à l'offset local.
+\end{enumerate}
+
+Dans la configuration actuelle :
+
+\begin{itemize}[leftmargin=*]
+    \item le nombre maximal d'essais vaut \texttt{5} ;
+    \item le délai entre deux essais vaut \texttt{1} seconde.
+\end{itemize}
+
+\subsection{Réplication de \texttt{put} et \texttt{rm}}
+
+Quand un esclave traite un \texttt{put} ou un \texttt{rm}, il essaie ensuite de
+prévenir tous les autres esclaves connus.
+
+\subsubsection{Pour \texttt{put}}
+
+L'esclave source :
+
+\begin{enumerate}[leftmargin=*]
+    \item ouvre une connexion vers le port de contrôle du pair ;
+    \item envoie une requête de réplication \texttt{FTP\_REPL\_PUT} ;
+    \item envoie aussi le contenu du fichier ;
+    \item attend un accusé de réception.
+\end{enumerate}
+
+L'esclave cible reçoit le fichier, l'écrit localement, puis renvoie un statut.
+
+\subsubsection{Pour \texttt{rm}}
+
+L'esclave source :
+
+\begin{enumerate}[leftmargin=*]
+    \item ouvre une connexion vers le pair ;
+    \item envoie une requête \texttt{FTP\_REPL\_RM} ;
+    \item attend le statut final.
+\end{enumerate}
+
+L'esclave cible supprime le fichier puis répond.
+
+\begin{warningbox}
+Notre réplication reste simple. Si la modification locale a réussi mais que la
+réplication échoue vers un autre esclave, nous écrivons une erreur dans les
+logs, mais nous ne revenons pas en arrière.
+\end{warningbox}
+\newpage
+\section{Explication par étapes du sujet}
+
+\subsection{Étape 1 : base du service FTP}
+
+\subsubsection{Q1 et Q2}
+
+Nous avons commencé par définir le langage du protocole :
+
+\begin{itemize}[leftmargin=*]
+    \item un type de requête avec \texttt{GET}, \texttt{PUT}, \texttt{LS},
+    \texttt{RM}, \texttt{BYE}, \texttt{AUTH} ;
+    \item une structure de requête ;
+    \item une structure de réponse.
+\end{itemize}
+
+Cela a donné une base commune au client et au serveur.
+
+\subsubsection{Q3 et Q4}
+
+Nous avons ensuite mis en place l'exécution :
+
+\begin{itemize}[leftmargin=*]
+    \item un client interactif ;
+    \item un serveur qui écoute ;
+    \item un pool de workers ;
+    \item un arrêt propre sur \texttt{SIGINT}.
+\end{itemize}
+
+Aujourd'hui, \texttt{NB\_PROC} vaut \texttt{1}. Nous avons donc bien un
+mécanisme de workers, mais avec un seul worker par esclave dans la
+configuration actuelle.
+
+\subsubsection{Q5}
+
+Nous avons séparé le monde client du monde serveur :
+
+\begin{itemize}[leftmargin=*]
+    \item le client travaille dans \texttt{data\_client/} ;
+    \item les serveurs travaillent dans \texttt{data\_server/}.
+\end{itemize}
+
+Le client ne lit donc pas directement les fichiers du serveur.
+
+\subsubsection{Q6 et Q7}
+
+Nous avons ensuite réalisé le premier vrai transfert :
+
+\begin{itemize}[leftmargin=*]
+    \item le client construit un \texttt{GET} ;
+    \item le serveur ouvre le fichier demandé ;
+    \item le serveur envoie une réponse puis le fichier ;
+    \item le client écrit le fichier reçu ;
+    \item le client affiche les statistiques.
+\end{itemize}
+
+\subsection{Étape 2 : blocs, session longue et reprise}
+
+\subsubsection{Q8}
+
+Nous avons envoyé les fichiers par blocs de taille \texttt{4096} octets. Cela
+évite de charger tout le fichier dans un seul gros buffer pour le transfert
+normal.
+
+\subsubsection{Q9}
+
+Nous avons gardé une boucle de session. Cela permet d'envoyer plusieurs
+commandes sur la même connexion TCP.
+
+Par exemple, nous pouvons faire :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{get a.txt} ;
+    \item \texttt{get b.txt} ;
+    \item \texttt{ls} ;
+    \item \texttt{bye}.
+\end{itemize}
+
+\subsubsection{Q10}
+
+Nous avons traité deux points :
+
+\begin{itemize}[leftmargin=*]
+    \item la reprise d'un téléchargement interrompu ;
+    \item la robustesse si un client coupe la connexion pendant un envoi.
+\end{itemize}
+
+La reprise fonctionne grâce à l'offset. La robustesse fonctionne parce que les
+fonctions réseau importantes renvoient des erreurs au lieu de tuer tout le
+processus. Le worker peut donc terminer la session courante puis continuer à
+servir d'autres clients.
+
+\subsection{Étape 3 : maître et esclaves}
+
+\subsubsection{Q11}
+
+Nous avons fixé les rôles et les ports :
+
+\begin{itemize}[leftmargin=*]
+    \item un maître sur \texttt{2121} ;
+    \item deux esclaves ;
+    \item des ports clients \texttt{3001} et \texttt{3002} ;
+    \item des ports de contrôle \texttt{4001} et \texttt{4002}.
+\end{itemize}
+
+\subsubsection{Q12}
+
+Nous avons ajouté l'enregistrement des esclaves au démarrage. Le maître apprend
+qui sont les esclaves avant d'accepter les clients.
+
+\subsubsection{Q13}
+
+Nous avons ajouté la redirection :
+
+\begin{itemize}[leftmargin=*]
+    \item le client parle d'abord au maître ;
+    \item le maître choisit un esclave ;
+    \item le client parle ensuite à cet esclave.
+\end{itemize}
+
+\subsubsection{Q14}
+
+Nous avons ajouté la reconnexion automatique pendant \texttt{get}. Si une
+connexion tombe, le client peut :
+
+\begin{itemize}[leftmargin=*]
+    \item se reconnecter ;
+    \item recevoir une nouvelle redirection ;
+    \item reprendre le téléchargement.
+\end{itemize}
+
+\subsection{Étape 4 : commandes avancées}
+
+\subsubsection{Q15}
+
+Nous avons ajouté \texttt{ls}. Le serveur envoie une liste texte des fichiers du
+répertoire courant.
+
+\subsubsection{Q16}
+
+Nous avons ajouté :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{put} pour envoyer un fichier du client vers le serveur ;
+    \item \texttt{rm} pour supprimer un fichier côté serveur ;
+    \item la réplication simple de ces modifications vers les autres esclaves.
+\end{itemize}
+
+\subsubsection{Q17}
+
+Nous avons ajouté une authentification de session. Sans authentification :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{get} et \texttt{ls} restent autorisés ;
+    \item \texttt{put} et \texttt{rm} sont refusés.
+\end{itemize}
+\newpage
+\section{Fonctions importantes}
+
+\subsection{Fonctions côté client}
+
 \begin{center}
 \small
-\begin{tabularx}{\textwidth}{@{}L{0.28\textwidth}L{0.64\textwidth}@{}}
+\begin{tabularx}{\textwidth}{@{}L{0.26\textwidth}L{0.22\textwidth}L{0.44\textwidth}@{}}
 \toprule
-\textbf{Test} & \textbf{Résultat attendu et observé} \\
+\textbf{Fonction} & \textbf{Fichier} & \textbf{Rôle simple} \\
 \midrule
-\texttt{get Transfert\_q6} & Le fichier est bien reçu dans \texttt{data\_client/} et le client affiche le message de succès avec statistiques. \\
-\texttt{get inexistant.txt} & Le client reçoit une erreur \texttt{NOT\_FOUND} et l'affiche correctement. \\
-\texttt{abc} & La commande est rejetée localement par le parsing du client. \\
-\texttt{get ../secret} & Le nom de fichier est rejeté par la validation de sécurité. \\
-\texttt{test\_transfert} & Un fichier de test est généré côté serveur, tronqué côté client, et le client termine le téléchargement correctement. \\
+\codecell{parse_command} & \codecell{src/clientFTP.c} & Analyse la ligne tapée par l'utilisateur. \\
+\codecell{ftp_client_connect} & \codecell{src/clientFTP.c} & Se connecte soit au maître, soit directement à un esclave. \\
+\codecell{ftp_client_reconnect} & \codecell{src/clientFTP.c} & Réessaie un \texttt{get} après une panne réseau. \\
+\codecell{ftp_client_run} & \codecell{src/clientFTP.c} & Gère toute la boucle interactive du client. \\
+\codecell{ftp_client_get} & \codecell{src/client_requests.c} & Envoie un \texttt{GET}, reçoit la réponse, reçoit le fichier et calcule les statistiques. \\
+\codecell{ftp_client_put} & \codecell{src/client_requests.c} & Envoie un \texttt{PUT} en deux temps. \\
+\codecell{ftp_client_ls} & \codecell{src/client_requests.c} & Envoie \texttt{LS} et reçoit le texte de la liste. \\
+\codecell{ftp_client_rm} & \codecell{src/client_requests.c} & Envoie \texttt{RM} et lit le statut final. \\
+\codecell{ftp_client_auth} & \codecell{src/client_requests.c} & Envoie les identifiants pour authentifier la session. \\
+\codecell{ftp_client_bye} & \codecell{src/client_requests.c} & Termine proprement la session. \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
-\subsection{Limites actuelles}
+\subsection{Fonctions côté serveur}
 
-Même si les étapes I et II sont terminées, plusieurs limites sont normales à ce stade :
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.28\textwidth}L{0.22\textwidth}L{0.42\textwidth}@{}}
+\toprule
+\textbf{Fonction} & \textbf{Fichier} & \textbf{Rôle simple} \\
+\midrule
+\codecell{ftp_server_run} & \codecell{src/serverFTP.c} & Démarre un esclave, ouvre les ports et lance les workers. \\
+\codecell{register_slave_to_master} & \codecell{src/serverFTP.c} & Attend le maître puis envoie l'identité de l'esclave. \\
+\codecell{worker_loop} & \codecell{src/serverFTP.c} & Attend un client et traite sa session. \\
+\codecell{control_loop} & \codecell{src/serverFTP.c} & Attend les messages de réplication. \\
+\codecell{ftp_handle_client} & \codecell{src/server_requests.c} & Boucle principale d'une session côté serveur. \\
+\codecell{handle_get_request} & \codecell{src/server_requests.c} & Gère le téléchargement avec reprise. \\
+\codecell{handle_put_request} & \codecell{src/server_requests.c} & Gère le téléversement et déclenche la réplication. \\
+\codecell{handle_ls_request} & \codecell{src/server_requests.c} & Gère la liste des fichiers. \\
+\codecell{handle_rm_request} & \codecell{src/server_requests.c} & Supprime un fichier puis tente de répliquer la suppression. \\
+\codecell{handle_auth_request} & \codecell{src/server_requests.c} & Valide ou refuse l'authentification. \\
+\codecell{ftp_handle_replication_connection} & \codecell{src/server_requests.c} & Traite un message de réplication reçu depuis un autre esclave. \\
+\bottomrule
+\end{tabularx}
+\end{center}
 
-\begin{itemize}[leftmargin=*]
-    \item pas de \texttt{put}, \texttt{ls}, \texttt{rm} ;
-    \item pas d'authentification ;
-    \item sérialisation applicative encore simplifiée.
-\end{itemize}
+\subsection{Fonctions du protocole et du transfert}
 
-\begin{sciencebox}
-La vraie amélioration réseau à moyen terme n'est pas seulement d'ajouter des
-commandes. Il faudra aussi rendre le protocole plus portable entre machines
-hétérogènes en sérialisant explicitement les champs numériques avec les conversions
-d'ordre des octets adaptées.
-\end{sciencebox}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}L{0.30\textwidth}L{0.22\textwidth}L{0.40\textwidth}@{}}
+\toprule
+\textbf{Fonction} & \textbf{Fichier} & \textbf{Rôle simple} \\
+\midrule
+\codecell{ftp_send_request} / \codecell{ftp_receive_request} & \codecell{src/ftp_protocol.c} & Envoient et lisent une requête complète au bon format réseau. \\
+\codecell{ftp_send_response} / \codecell{ftp_receive_response} & \codecell{src/ftp_protocol.c} & Envoient et lisent une réponse complète au bon format réseau. \\
+\codecell{ftp_send_slave_hello} / \codecell{ftp_receive_slave_hello} & \codecell{src/ftp_protocol.c} & Gèrent l'échange d'identité entre maître et esclaves. \\
+\codecell{ftp_send_cluster_map} / \codecell{ftp_receive_cluster_map} & \codecell{src/ftp_protocol.c} & Gèrent l'envoi de la carte du cluster. \\
+\codecell{ftp_send_replication_request} / \codecell{ftp_receive_replication_request} & \codecell{src/ftp_protocol.c} & Gèrent les messages de réplication. \\
+\codecell{ftp_send_control_reply} / \codecell{ftp_receive_control_reply} & \codecell{src/ftp_protocol.c} & Gèrent les accusés de réception du canal de contrôle. \\
+\codecell{ftp_send_fd_payload} & \codecell{src/ftp_transfer.c} & Envoie le contenu d'un fichier ouvert par blocs. \\
+\codecell{ftp_receive_file_payload} & \codecell{src/ftp_transfer.c} & Reçoit un fichier et l'écrit sur disque, avec reprise si besoin. \\
+\codecell{ftp_receive_buffer_payload} & \codecell{src/ftp_transfer.c} & Reçoit un texte, par exemple le résultat de \texttt{ls}. \\
+\codecell{ftp_is_safe_filename} & \codecell{src/ftp_protocol.c} & Refuse les noms de fichiers dangereux. \\
+\bottomrule
+\end{tabularx}
+\end{center}
 
-\newpage \section{Etape 3 : Répartition de charge entre serveurs FTP}
+\subsection{Wrappers système utiles}
 
-L'étape III introduit une architecture maître / esclaves. À ce stade, les
-questions 11 et 12 sont réalisées dans le code : le projet distingue le port du
-maître, fixe un nombre statique d'esclaves, réserve des plages de ports dédiées
-et établit l'interconnexion maître / esclaves au démarrage.
-
-\subsection{Question 11 réalisée}
-
-\begin{itemize}[leftmargin=*]
-    \item \texttt{FTP\_MASTER\_PORT} réserve le port \texttt{2121} au programme \texttt{masterFTP} ;
-    \item \texttt{NB\_SLAVES} fixe le nombre d'esclaves à \texttt{2} ;
-    \item \texttt{FTP\_SLAVE\_CLIENT\_BASE\_PORT} et \texttt{FTP\_SLAVE\_CTRL\_BASE\_PORT} définissent les bases \texttt{3001} et \texttt{4001} ;
-    \item \texttt{FTP\_SLAVE\_CLIENT\_PORT(id)} et \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} calculent les ports de chaque esclave ;
-    \item le binaire \texttt{serverFTP} peut maintenant être lancé avec un identifiant d'esclave pour écouter sur le bon port client ;
-    \item le binaire \texttt{masterFTP} existe désormais séparément dans la chaîne de compilation.
-\end{itemize}
-
-Concrètement, avec \texttt{NB\_SLAVES = 2}, on obtient :
-
-\begin{itemize}[leftmargin=*]
-    \item esclave 1 : port client \texttt{3001}, port de contrôle \texttt{4001} ;
-    \item esclave 2 : port client \texttt{3002}, port de contrôle \texttt{4002}.
-\end{itemize}
-
-\subsection{Question 12 réalisée}
-
-La question 12 consiste à faire en sorte que le maître récupère les informations
-de chaque esclave et les conserve en mémoire. L'implémentation retenue repose
-sur un petit canal de contrôle distinct du port client.
-
-\begin{itemize}[leftmargin=*]
-    \item chaque esclave ouvre d'abord son port de contrôle \texttt{FTP\_SLAVE\_CTRL\_PORT(id)} ;
-    \item le maître se connecte successivement à chaque esclave sur ce port ;
-    \item l'esclave envoie une structure \texttt{slave\_hello\_t} contenant sa version de protocole, son identifiant, son port client, son port de contrôle et son nom d'hôte ;
-    \item le maître lit cette structure, vérifie les champs reçus, puis stocke ces informations dans un tableau local de structures représentant les esclaves enregistrés ;
-    \item le maître n'ouvre son port client \texttt{2121} qu'après l'enregistrement complet des \texttt{NB\_SLAVES} esclaves.
-\end{itemize}
-
-Ce choix est cohérent avec le sujet : les informations sont bien transmises au
-maître au démarrage, elles sont mémorisées côté maître, et l'initialisation du
-système garantit qu'un client ne contacte pas un maître incomplet.
-
-\subsection{Question 13 réalisée}
-
-La question 13 demande au maître de faire un choix parmis les slaves enregistrés pour rediriger le client. 
-Nous avons choisi de faire une redirection simple qui consiste à répondre au client avec une réponse contenant le port client de l'esclave choisi en round-robin.
-Grâce à l'étape 12, le maître connaît déjà les ports clients de tous les esclaves, le master-server renvoie le clients choisis par la fonction \texttt{select\_slave}.
+Nous utilisons surtout quelques wrappers de \texttt{csapp} :
 
 \begin{itemize}[leftmargin=*]
-    \item la fonction \texttt{select\_slave} implémente une sélection round-robin parmi les esclaves enregistrés.
-    \item lorsque le maître reçoit une requête d'un client, il appelle \texttt{select\_slave} pour choisir un esclave.
-    \item le maître répond au client avec le port client de l'esclave choisi.
-    \item le client reçoit cette réponse, et se reconnecte directement à cet esclave pour poursuivre la session FTP.
+    \item \texttt{Open\_listenfd} pour ouvrir une socket d'écoute ;
+    \item \texttt{open\_clientfd} pour ouvrir une connexion TCP ;
+    \item \texttt{rio\_readn} et \texttt{rio\_writen} pour lire et écrire exactement le bon nombre d'octets ;
+    \item \texttt{Fork} pour créer les workers ;
+    \item \texttt{Signal} pour installer les handlers ;
+    \item \texttt{Close} pour fermer proprement les descripteurs.
 \end{itemize}
+\newpage
+\section{Tests}
 
-%\begin{sciencebox}
-%La Q12 ne réalise pas encore la répartition de charge elle-même. Le maître sait
-%désormais \emph{qui} sont ses esclaves et \emph{sur quels ports} ils écoutent,
-%mais la sélection d'un esclave et la redirection effective du client relèvent de
-%la question suivante.
-%\end{sciencebox}
+\subsection{Scripts présents dans le dépôt}
 
-\subsection{Question 13 réalisée}
-La question 14 automatise la reconnexion du client au master server en cas d'erreur du serveur esclave.
-Pour le réaliser nous avons du refactor une partie du code client pour isoler la logique de connexion dans une fonction dédiée \texttt{ftp_client_connect} qui tente de se connecter au maître et gère les erreurs de connexion.
-Egalement un affinage des codes d'erreur à été fait pour différencier les erreurs de connexion des autres types d'erreurs.
-cette fonction est appelée à la connexion initiale du client mais aussi lors de la reconnexion en cas d'erreur d'un esclave.
-\begin{itemize}[leftmargin=*]
-    \item si le get echoue à cause d'une erreur de connexion, le client affiche un message d'erreur et tente de se reconnecter au maître en appelant \texttt{ftp_client_reconnect}.
-    \item la fonction \texttt{ftp_client_reconnect} tente de se reconnecter au maître en appelant \texttt{ftp_client_connect}.
-    \item si la reconnexion réussit, le client reprend sa session FTP normalement.
-    \item sinon il réessaie 5 fois avec un délai puis abandonne avec un message d'erreur.
-\end{itemize}
-
-\subsection{Questions restantes}
-
-\newpage \section{Etape 4 : Opérations avancées}
-
-L'étape IV n'est pas encore commencée. Elle regroupe les fonctionnalités les
-plus avancées du sujet, à traiter seulement après la mise en place correcte de
-l'étape III.
-
-\subsection{Fonctionnalités attendues}
+Le dépôt contient plusieurs scripts de test et de démonstration. Les deux plus
+importants pour la version finale sont :
 
 \begin{itemize}[leftmargin=*]
-    \item \texttt{ls} pour lister le contenu du répertoire du serveur ;
-    \item \texttt{rm} et \texttt{put} pour modifier les fichiers ;
-    \item un mécanisme d'authentification pour protéger les opérations sensibles.
+    \item \texttt{scripts/demo\_q1\_q17.sh} ;
+    \item \texttt{scripts/test\_questions\_q1\_q17.sh}.
 \end{itemize}
 
-\subsection{Suite logique}
+\subsection{Ce que ces scripts vérifient}
 
-La suite du travail consiste donc à terminer d'abord l'interconnexion maître /
-esclaves, puis à ajouter les commandes avancées et l'authentification demandées
-par la dernière étape du sujet.
+Ces scripts vérifient notamment :
+
+\begin{itemize}[leftmargin=*]
+    \item la compilation du projet ;
+    \item le démarrage du cluster maître / esclaves ;
+    \item un \texttt{get} simple ;
+    \item plusieurs commandes sur une seule session ;
+    \item la reprise d'un fichier tronqué ;
+    \item la robustesse après coupure brutale d'un client ;
+    \item la redirection par le maître ;
+    \item la reconnexion du client après panne d'un worker ;
+    \item \texttt{ls}, \texttt{auth}, \texttt{put} et \texttt{rm} ;
+    \item les traces de réplication dans les logs.
+\end{itemize}
+
+\subsection{Méthodes de vérification}
+
+Les scripts utilisent des outils simples :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{grep} pour chercher des messages dans les logs ;
+    \item \texttt{test -f} pour vérifier qu'un fichier existe ;
+    \item \texttt{sha256sum} pour comparer deux fichiers ;
+    \item des attentes explicites dans les logs pour vérifier que le cluster est prêt.
+\end{itemize}
+
+\subsection{Commandes utiles}
+
+Les commandes les plus utiles sont :
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{make all} pour construire le projet ;
+    \item \texttt{make clean} pour nettoyer ;
+    \item \texttt{make demo-q1-q17} pour lancer la démonstration complète ;
+    \item \texttt{bash scripts/test\_questions\_q1\_q17.sh} pour lancer la batterie de tests question par question.
+\end{itemize}
+\newpage
+\section{Limites actuelles}
+
+Le projet répond au sujet, mais nous avons gardé quelques choix simples :
+
+\begin{itemize}[leftmargin=*]
+    \item les identifiants d'authentification sont codés en dur ;
+    \item l'authentification vaut seulement pour la connexion TCP courante ;
+    \item la reconnexion automatique existe seulement pour \texttt{get} ;
+    \item le maître fait un round-robin simple, sans mesure réelle de charge ;
+    \item la réplication est simple et sans journal persistant ;
+    \item si un pair est absent pendant une réplication, nous n'avons pas de rattrapage différé ;
+    \item les deux esclaves partagent le même dossier \texttt{data\_server/} dans ce dépôt local ;
+    \item la taille du pool vaut \texttt{1} par défaut, même si la structure du code accepte plusieurs workers.
+\end{itemize}
+\newpage
+\section{Conclusion}
+
+Nous avons construit un mini service FTP complet pour le sujet.
+
+Le projet montre plusieurs points importants :
+
+\begin{itemize}[leftmargin=*]
+    \item un protocole applicatif simple sur TCP ;
+    \item des transferts de fichiers par blocs ;
+    \item la reprise d'un téléchargement ;
+    \item une architecture maître / esclaves ;
+    \item une redirection client vers un esclave ;
+    \item une reconnexion côté client ;
+    \item des commandes avancées avec authentification et réplication simple ;
+    \item une sérialisation explicite des messages réseau avec gestion de l'ordre des octets.
+\end{itemize}
+
+Nous avons volontairement gardé un design lisible. Ce n'est pas un FTP complet
+au sens industriel, mais c'est un projet cohérent, progressif et utile pour
+comprendre les bases des systèmes répartis et des réseaux.
 
 \end{document}

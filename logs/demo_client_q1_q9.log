@@ -1,7 +1,7 @@
 clientFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_client
 Connected to 127.0.0.1:3001.
 FTP >>> Transfer successfully complete.
-24 bytes received in 0.001 seconds (44.64 Kbytes/s).
+24 bytes received in 0.001 seconds (34.17 Kbytes/s).
 FTP >>> Transfer successfully complete.
-1048576 bytes received in 0.001 seconds (732999.28 Kbytes/s).
+1048576 bytes received in 0.005 seconds (227303.00 Kbytes/s).
 FTP >>> Bye!

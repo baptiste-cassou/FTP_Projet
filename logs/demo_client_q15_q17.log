@@ -6,27 +6,23 @@ test2
 demo_q8_q9.bin
 list_seed.txt
 test1
-q10_crash_test.bin
 demo_q10_resume.bin
 Transfert_q6
 demo_q1_q7.txt
 demo_q14_reconnect.bin
-q10_rst_test.bin
 FTP >>> clientFTP: server returned AUTH_REQUIRED for PUT preflight
 FTP >>> clientFTP: server returned AUTH_FAILED for AUTH
 FTP >>> Authentication successful.
 FTP >>> Upload successfully complete.
-19 bytes sent in 0.001 seconds (30.92 Kbytes/s).
+19 bytes sent in 0.001 seconds (33.98 Kbytes/s).
 FTP >>> demo_q15_seed.txt
 test2
 demo_q16_upload.txt
 demo_q8_q9.bin
 list_seed.txt
 test1
-q10_crash_test.bin
 demo_q10_resume.bin
 Transfert_q6
 demo_q1_q7.txt
 demo_q14_reconnect.bin
-q10_rst_test.bin
 FTP >>> Bye!

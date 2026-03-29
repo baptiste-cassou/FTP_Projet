@@ -2,5 +2,5 @@ clientFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_client
 Redirection vers le slave 2 (a1ka-LOQ-15IAX9:3002)
 Connected to a1ka-LOQ-15IAX9:3002.
 FTP >>> Transfer successfully complete.
-268435456 bytes received in 0.362 seconds (724959.76 Kbytes/s).
+268435456 bytes received in 0.366 seconds (717128.03 Kbytes/s).
 FTP >>> Bye!

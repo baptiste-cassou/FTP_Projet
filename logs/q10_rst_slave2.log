@@ -1,4 +1,0 @@
-serverFTP working directory: /home/a1ka/Bureau/UGA/SR/FTP_Projet/data_server
-serverFTP slave 2 waiting for master on control port 4002
-serverFTP slave 2 registered to master 127.0.0.1 with client port 3002
-serverFTP slave 2 listening on client port 3002 with 1 workers

@@ -1,5 +1,0 @@
-masterFTP: slave 1 registered (a1ka-LOQ-15IAX9, client=3001, control=4001)
-masterFTP: slave 2 registered (a1ka-LOQ-15IAX9, client=3002, control=4002)
-masterFTP: listening on port 2121 with 2 registered slaves
-masterFTP: redirected client 127.0.0.1 to slave 1 (a1ka-LOQ-15IAX9:3001)
-masterFTP: redirected client 127.0.0.1 to slave 2 (a1ka-LOQ-15IAX9:3002)

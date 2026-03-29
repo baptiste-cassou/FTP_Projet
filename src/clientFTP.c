@@ -142,11 +142,13 @@ static int ftp_client_reconnect(const char *host, int port, int *clientfd, parse
     while (try < FTP_MAX_TRY_RECONNECTION && !success) {
         try++;
         if (ftp_client_connect(host, port, clientfd) < 0) {
+            sleep(FTP_TIME_BETWEEN_TRY);
             continue;
         }
 
         if (ftp_client_get(*clientfd, cmd.filename, stats) < 0) {
             Close(*clientfd);
+            sleep(FTP_TIME_BETWEEN_TRY);
             continue;
         }
         success = 1;

@@ -22,6 +22,7 @@
 #define FTP_CLIENT_DATA_DIR "data_client"
 #define FTP_MAX_HOST 64
 #define FTP_MAX_TRY_RECONNECTION 1
+#define FTP_TIME_BETWEEN_TRY 1
 // Tailles maximales des champs texte transportes sur le reseau.
 #define FTP_MAX_FILENAME 256
 #define FTP_MAX_LOGIN 32

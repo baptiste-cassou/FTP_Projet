@@ -842,15 +842,19 @@ Grâce à l'étape 12, le maître connaît déjà les ports clients de tous les 
 %la question suivante.
 %\end{sciencebox}
 
+\subsection{Question 13 réalisée}
+La question 14 automatise la reconnexion du client au master server en cas d'erreur du serveur esclave.
+Pour le réaliser nous avons du refactor une partie du code client pour isoler la logique de connexion dans une fonction dédiée \texttt{ftp_client_connect} qui tente de se connecter au maître et gère les erreurs de connexion.
+Egalement un affinage des codes d'erreur à été fait pour différencier les erreurs de connexion des autres types d'erreurs.
+cette fonction est appelée à la connexion initiale du client mais aussi lors de la reconnexion en cas d'erreur d'un esclave.
+\begin{itemize}[leftmargin=*]
+    \item si le get echoue à cause d'une erreur de connexion, le client affiche un message d'erreur et tente de se reconnecter au maître en appelant \texttt{ftp_client_reconnect}.
+    \item la fonction \texttt{ftp_client_reconnect} tente de se reconnecter au maître en appelant \texttt{ftp_client_connect}.
+    \item si la reconnexion réussit, le client reprend sa session FTP normalement.
+    \item sinon il réessaie 5 fois avec un délai puis abandonne avec un message d'erreur.
+\end{itemize}
 
 \subsection{Questions restantes}
-
-La question Q14 ne sont pas encore réalisées. Il reste notamment à :
-
-\begin{itemize}[leftmargin=*]
-    \item faire prendre au maître une vraie décision de répartition à chaque nouvelle connexion. (idée: le master-server connait le nb de clients d'un slave, le slave doit indiquer au server les déconnexions clients)
-    \item implémenter une reconnexion au master automatique en cas de panne d'un esclave.
-\end{itemize}
 
 \newpage \section{Etape 4 : Opérations avancées}
 

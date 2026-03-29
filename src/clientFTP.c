@@ -37,6 +37,27 @@ static int receive_slave_redirection(int masterfd, slave_hello_t *hello)
     return 0;
 }
 
+static int ftp_handle_redirection(const char *host, int port, char *r_host, int *r_port){
+    slave_hello_t redirect;
+    int clientfd = Open_clientfd((char *)host, port); //connexion au maitre
+    if (clientfd < 0) {
+        fprintf(stderr, "impossible de se connecter au maitre %s:%d\n", host, port);
+        return -1;
+    }
+    if (receive_slave_redirection(clientfd, &redirect) < 0) {
+        Close(clientfd);
+        return -1; //en cas d'erreur avec le slave on retente une nouvelle connexion
+    }
+    Close(clientfd);
+
+    strncpy(r_host, redirect.host, FTP_MAX_HOST - 1);
+
+    r_host[FTP_MAX_HOST - 1] = '\0'; 
+    *r_port = (int)redirect.client_port;
+    printf("Redirection vers le slave %u (%s:%d)\n", redirect.slave_id,r_host,*r_port);
+    return 0;
+}
+
 static int parse_command(const char *line, parsed_command_t *cmd)
 {
     char command[16];
@@ -88,58 +109,76 @@ static int parse_command(const char *line, parsed_command_t *cmd)
     return 0;
 }
 
+static int ftp_client_connect(const char *host, int port, int *clientfd) {
+    char target_host[FTP_MAX_HOST]; //hostname après première connexion
+    int target_port = port; //port après première connexion
+
+    if (port == FTP_MASTER_PORT) {
+        if(ftp_handle_redirection(host, port, target_host, &target_port) < 0) {
+            fprintf(stderr, "redirection impossible\n");
+            return -1;
+        }
+        *clientfd = Open_clientfd(target_host, target_port);
+    } else {
+        *clientfd = Open_clientfd((char *)host, target_port); // on peut tjrs se connecter directement à un serveur si port != 2121
+    }
+
+    if (*clientfd < 0) {
+        fprintf(stderr, "unable to connect to %s:%d\n",
+                (port == FTP_MASTER_PORT) ? target_host : host,
+                target_port);
+        return -1;
+    }
+    
+    printf("Connected to %s:%d.\n",
+           (port == FTP_MASTER_PORT) ? target_host : host,
+           target_port);
+    return 0;
+}
+
+static int ftp_client_reconnect(const char *host, int port, int *clientfd, parsed_command_t cmd, ftp_transfer_stats_t *stats){
+    int try = 0;
+    int success = 0;
+    while (try < FTP_MAX_TRY_RECONNECTION && !success) {
+        try++;
+        if (ftp_client_connect(host, port, clientfd) < 0) {
+            continue;
+        }
+
+        if (ftp_client_get(*clientfd, cmd.filename, stats) < 0) {
+            Close(*clientfd);
+            continue;
+        }
+        success = 1;
+    }
+    return success==0;
+}
+
+
 int ftp_client_run(const char *host, int port)
 {
     int clientfd = -1;
     char line[MAXLINE];
     ftp_transfer_stats_t stats;
     double kbytes_per_second;
-    char target_host[FTP_MAX_HOST]; //hostname après première connexion
-    int target_port = port; //port après première connexion
+    //char target_host[FTP_MAX_HOST]; //hostname après première connexion
+    //int target_port = port; //port après première connexion
+    uint8_t restart_cmd=0;
 
     ftp_enter_working_directory("clientFTP", FTP_CLIENT_DATA_DIR);
-
-    if (port == FTP_MASTER_PORT) {
-        slave_hello_t redirect;
-        clientfd = Open_clientfd((char *)host, FTP_MASTER_PORT); //connexion au maitre
-        if (clientfd < 0) {
-            fprintf(stderr, "impossible de se connecter au maitre %s:%d\n", host, FTP_MASTER_PORT);
-            return 1;
-        }
-        if (receive_slave_redirection(clientfd, &redirect) < 0) {
-            Close(clientfd);
-            return 1;
-        }
-        Close(clientfd);
-
-        strncpy(target_host, redirect.host, sizeof(target_host) - 1);
-        target_host[sizeof(target_host) - 1] = '\0'; 
-        target_port = (int)redirect.client_port;
-        printf("Redirection vers le slave %u (%s:%d)\n", redirect.slave_id,target_host,target_port);
-
-        clientfd = Open_clientfd(target_host, target_port);
-    } else {
-        clientfd = Open_clientfd((char *)host, target_port); // on peut tjrs se connecter directement à un serveur si port != 2121
-    }
-
-    if (clientfd < 0) {
-        fprintf(stderr, "unable to connect to %s:%d\n",
-                (port == FTP_MASTER_PORT) ? target_host : host,
-                target_port);
+    if (ftp_client_connect(host, port, &clientfd) < 0) {
         return 1;
     }
-
-    printf("Connected to %s:%d.\n",
-           (port == FTP_MASTER_PORT) ? target_host : host,
-           target_port);
+    
     while (1) {
         printf("FTP >>> ");
         fflush(stdout);
-        if (Fgets(line, sizeof(line), stdin) == NULL) {
-            Close(clientfd);
-            return 0;
+        if (!restart_cmd) {
+            if (Fgets(line, sizeof(line), stdin) == NULL) {
+                Close(clientfd);
+                return 0;
+            }
         }
-
         if (strcmp(line, "\n") == 0) continue;
 
         parsed_command_t cmd;
@@ -149,8 +188,19 @@ int ftp_client_run(const char *host, int port)
         }
 
         if (cmd.type == FTP_REQ_GET) {
-            if (ftp_client_get(clientfd, cmd.filename, &stats) < 0) {
-                continue;
+            switch (ftp_client_get(clientfd, cmd.filename, &stats)) {
+                case 0: //cas normal
+                    break;
+                case -1: //cas d'erreur normal
+                    continue;
+                case -2: //cas d'erreur serveur, tentative de reconnexion
+                    fprintf(stderr, "Erreur serveur, tentative de reconnexion %s:%d\n", host, port);
+                    Close(clientfd);
+                    if (ftp_client_reconnect(host, port, &clientfd, cmd, &stats) == 1){
+                        fprintf(stderr, "clientFTP: le client à tenté de se reconnecter %d fois mais à échoué\n", FTP_MAX_TRY_RECONNECTION);
+                        return -1;
+                    }
+                    break;
             }
             kbytes_per_second = (stats.bytes_received / 1024.0) / stats.seconds;
             printf("Transfer successfully complete.\n");

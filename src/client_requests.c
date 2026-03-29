@@ -29,12 +29,12 @@ int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *sta
     Rio_writen(clientfd, &request, sizeof(request));
 
     if (ftp_receive_response(clientfd, &response) < 0) {
-        return -1;
+        return -2;
     }
 
     if (response.type != request.type) {
         fprintf(stderr, "clientFTP: unexpected response type %u\n", response.type);
-        return -1;
+        return -2;
     }
     if (response.status != FTP_STATUS_OK && response.status != FTP_STATUS_RESTART) {
         fprintf(stderr, "clientFTP: server returned %s for '%s'\n",
@@ -43,7 +43,7 @@ int ftp_client_get(int clientfd, const char *filename, ftp_transfer_stats_t *sta
     }
 
     if ((received = ftp_receive_file_payload(clientfd, filename, response.file_size, response.offset)) < 0) {
-        return -1;
+        return -2;
     }
 
     gettimeofday(&end, NULL);

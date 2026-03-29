@@ -11,22 +11,24 @@ LOG_DIR="$ROOT_DIR/logs"
 TEXT_FILE="demo_q1_q7.txt"
 BIN_FILE="demo_q8_q9.bin"
 RESUME_FILE="demo_q10_resume.bin"
+RECONNECT_FILE="demo_q14_reconnect.bin"
 
 SERVER_TEXT_PATH="$ROOT_DIR/data_server/$TEXT_FILE"
 SERVER_BIN_PATH="$ROOT_DIR/data_server/$BIN_FILE"
 SERVER_RESUME_PATH="$ROOT_DIR/data_server/$RESUME_FILE"
+SERVER_RECONNECT_PATH="$ROOT_DIR/data_server/$RECONNECT_FILE"
 
 CLIENT_TEXT_PATH="$ROOT_DIR/data_client/$TEXT_FILE"
 CLIENT_BIN_PATH="$ROOT_DIR/data_client/$BIN_FILE"
 CLIENT_RESUME_PATH="$ROOT_DIR/data_client/$RESUME_FILE"
-
+CLIENT_RECONNECT_PATH="$ROOT_DIR/data_client/$RECONNECT_FILE"
 SLAVE1_LOG="$LOG_DIR/demo_slave1.log"
 SLAVE2_LOG="$LOG_DIR/demo_slave2.log"
 MASTER_LOG="$LOG_DIR/demo_master.log"
 CLIENT_MULTI_LOG="$LOG_DIR/demo_client_q1_q9.log"
 CLIENT_RESUME_LOG="$LOG_DIR/demo_client_q10.log"
 CLIENT_Q13_LOG="$LOG_DIR/demo_client_q13.log"
-
+CLIENT_Q14_LOG="$LOG_DIR/demo_client_q14.log"
 PIDS=()
 
 cleanup() {
@@ -42,8 +44,10 @@ cleanup() {
     wait "$pid" 2>/dev/null || true
   done
 
-  rm -f "$SERVER_TEXT_PATH" "$SERVER_BIN_PATH" "$SERVER_RESUME_PATH"
-  rm -f "$CLIENT_TEXT_PATH" "$CLIENT_BIN_PATH" "$CLIENT_RESUME_PATH"
+  rm -f "$SERVER_TEXT_PATH" "$SERVER_BIN_PATH" "$SERVER_RESUME_PATH" "$SERVER_RECONNECT_PATH"
+  rm -f "$CLIENT_TEXT_PATH" "$CLIENT_BIN_PATH" "$CLIENT_RESUME_PATH" "$CLIENT_RECONNECT_PATH"
+  pkill -9 serverFTP 2>/dev/null || true
+  pkill -9 masterFTP 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -78,13 +82,16 @@ echo "[2/9] Prepare demonstration files"
 printf 'Demonstration FTP Q1-Q7\n' > "$SERVER_TEXT_PATH"
 dd if=/dev/urandom of="$SERVER_BIN_PATH" bs=1M count=1 status=none
 dd if=/dev/urandom of="$SERVER_RESUME_PATH" bs=1M count=2 status=none
-rm -f "$CLIENT_TEXT_PATH" "$CLIENT_BIN_PATH" "$CLIENT_RESUME_PATH"
+dd if=/dev/urandom of="$SERVER_RECONNECT_PATH" bs=1M count=1024 status=none
+rm -f "$CLIENT_TEXT_PATH" "$CLIENT_BIN_PATH" "$CLIENT_RESUME_PATH" "$CLIENT_RECONNECT_PATH"
 
 echo "[3/9] Start slave 1 and slave 2"
 stdbuf -oL -eL "$ROOT_DIR/bin/serverFTP" "$SLAVE1_ID" >"$SLAVE1_LOG" 2>&1 &
+PIDS_SLAVE1=$!
 PIDS+=("$!")
 stdbuf -oL -eL "$ROOT_DIR/bin/serverFTP" "$SLAVE2_ID" >"$SLAVE2_LOG" 2>&1 &
 PIDS+=("$!")
+PIDS_SLAVE2=$!
 
 wait_for_log "$SLAVE1_LOG" "waiting for master on control port"
 wait_for_log "$SLAVE2_LOG" "waiting for master on control port"
@@ -144,7 +151,58 @@ test -f "$CLIENT_TEXT_PATH"
 echo "Client session Q13:"
 cat "$CLIENT_Q13_LOG"
 
-echo "[8/9] Summary"
+echo "[8/9] Demonstrate Q14 client reconnection after worker crash"
+rm -f "$CLIENT_RECONNECT_PATH"
+printf "get %s\nbye\n" "$RECONNECT_FILE" \
+  | "$ROOT_DIR/bin/clientFTP" "$HOST" >"$CLIENT_Q14_LOG" 2>&1 &
+PID_Q14=$!
+
+# Wait for client to connect and log redirection
+wait_for_log "$CLIENT_Q14_LOG" "Redirection vers le slave" 2
+
+# Extract which slave was chosen (slave 1 or slave 2)
+REDIRECTED_SLAVE=$(grep -m1 "Redirection vers le slave" "$CLIENT_Q14_LOG" | grep -oE 'slave [0-9]+' | cut -d' ' -f2)
+if [[ -z "$REDIRECTED_SLAVE" ]]; then
+  echo "Failed to detect slave redirection in Q14" >&2
+  cat "$CLIENT_Q14_LOG" >&2
+  exit 1
+fi
+
+# Determine which port the client was redirected to
+if [[ "$REDIRECTED_SLAVE" -eq 1 ]]; then
+  REDIRECTED_PORT=3001
+else
+  REDIRECTED_PORT=3002
+fi
+
+# Give the transfer a moment to start
+sleep 0.5
+
+# Kill all workers (child processes) connected to the redirected port, not the parent
+# fuser -k kills processes using the port; this disrupts the active transfer
+fuser -k "$REDIRECTED_PORT/tcp" 2>/dev/null || true
+
+# Wait for client to attempt reconnection and complete transfer
+wait $PID_Q14 2>/dev/null || true
+
+# Verify transfer integrity via SHA256
+SERVER_HASH="$(sha256sum "$SERVER_RECONNECT_PATH" | cut -d ' ' -f1)"
+CLIENT_HASH="$(sha256sum "$CLIENT_RECONNECT_PATH" | cut -d ' ' -f1)"
+
+if [[ "$SERVER_HASH" != "$CLIENT_HASH" ]]; then
+  echo "Reconnect verification failed" >&2
+  echo "server hash: $SERVER_HASH" >&2
+  echo "client hash: $CLIENT_HASH" >&2
+  echo "client log:" >&2
+  cat "$CLIENT_Q14_LOG" >&2
+  exit 1
+fi
+
+echo "Client session Q14 (reconnection after crash):"
+cat "$CLIENT_Q14_LOG"
+
+
+echo "[9/9] Summary"
 echo "- Q1-Q7: request/response structures, client/server skeleton, SIGINT cleanup, directories, GET"
 echo "- Q8: transfer by blocks demonstrated on binary files"
 echo "- Q9: multiple commands in a single client session"
@@ -152,5 +210,6 @@ echo "- Q10: resume verified by matching SHA256 after partial local file"
 echo "- Q11: static slave count and dedicated ports"
 echo "- Q12: master registered 2 slaves before listening on 2121"
 echo "- Q13: client connected to master then redirected automatically to a slave"
+echo "- Q14: client reconnects to alternate slave after first worker crashes mid-transfer"
 
-echo "[9/9] PASS"
+echo "[10/10] PASS"

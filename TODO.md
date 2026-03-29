@@ -47,10 +47,10 @@
 - [x] **Q12 - Interconnexion maître/esclaves**  
   Faire établir au maître les connexions vers les esclaves au démarrage et stocker les informations nécessaires.
 
-- [ ] **Q13 - Adapter la connexion client**  
+- [X] **Q13 - Adapter la connexion client**  
   Après connexion au maître, faire recevoir au client les infos de l'esclave, puis basculer la session FTP vers cet esclave.
 
-- [ ] **Q14 - Bonus panne esclave**  
+- [X] **Q14 - Bonus panne esclave**  
   Proposer/implémenter un protocole de redirection vers un esclave sain en cas de panne.
 
 ## Étape IV : Opérations avancées

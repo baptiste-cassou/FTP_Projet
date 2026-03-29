@@ -4,7 +4,7 @@
 void ftp_enter_working_directory(const char *program_name, const char *path)
 {
     char cwd[MAXLINE];
-
+    
     if (chdir(path) < 0) {
         fprintf(stderr, "%s: unable to enter working directory '%s': %s\n",
                 program_name, path, strerror(errno));
